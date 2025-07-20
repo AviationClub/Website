@@ -1,0 +1,75 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 215 78% 39%;
+    --foreground: 0 0% 100%;
+    --primary-dark: 217 82% 29%;
+    --brand-yellow: 52 93% 52%;
+    --brand-red: 351 73% 64%;
+  }
+}
+
+@layer base {
+  html {
+    font-size: calc((100vw / 2560) * 10);
+  }
+
+  body {
+    @apply overflow-x-hidden bg-background text-foreground;
+  }
+}
+
+.noise::after {
+  content: " ";
+  background: url("../assets/images/Noise.png");
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  animation: noise 1.5s steps(6) infinite;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.px-clamp {
+  padding-left: clamp(16px, 2.1875vw, 56px);
+  padding-right: clamp(16px, 2.1875vw, 56px);
+}
+
+.absolute-center {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.section-title .left,
+.section-title .right {
+  background: linear-gradient(to right, white 50%, hsl(var(--background)) 50%);
+  -webkit-text-fill-color: transparent;
+  -webkit-text-stroke: 1px white;
+  -webkit-background-clip: text;
+  background-clip: text;
+  background-position-x: 0%;
+  background-size: 200%;
+}
+
+@keyframes noise {
+
+  0%,
+  100% {
+    transform: translate(0);
+  }
+
+  50% {
+    transform: translate(-15px, -16px) scale(1.25);
+  }
+
+  90% {
+    transform: translate(-8px, -12px) scale(1.25);
+  }
+}
