@@ -6,12 +6,13 @@
       "direction": "in",
       "name": "req",
       "methods": ["post"],
-      "route": "SubmitFormAC25"
+      "route": "submit"
     },
     {
       "type": "http",
       "direction": "out",
       "name": "res"
     }
-  ]
+  ],
+  "scriptFile": "index.js"
 }
