@@ -1,0 +1,107 @@
+* {
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+  font-family: sans-serif;
+}
+
+body {
+  height: 100vh;
+  background: url(imgs/main_bg7.jpg);
+  background-size: cover;
+  background-position: center;
+}
+
+.container {
+  width: 100%;
+  max-width: 700px;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 28px;
+  /* margin: 0 28px; */
+  margin: auto;
+  height: fit-content;
+  border-radius: 10px;
+  box-shadow: inset -2px 2px 2px #9b9b9b;
+}
+
+.logo {
+  display: block;
+  /* margin-left: auto;
+  margin-right: auto; */
+  margin: 0 auto;
+  width: 60%;
+}
+
+.form-title {
+  font-size: 26px;
+  font-weight: 600;
+  text-align: center;
+  padding-bottom: 6px;
+  color: #fafafa;
+  text-shadow: 2px 2px 2px #101010;
+  border-bottom: solid 1px #9b9b9b;
+}
+
+.main-user-info {
+  padding: 20px 0;
+}
+
+.user-input-box {
+  width: 100%;
+  padding-bottom: 15px;
+}
+.user-input-box label,
+.email-box label {
+  display: block;
+  color: #fafafa;
+  font-size: 20px;
+  font-weight: 400;
+  margin: 2px 0;
+}
+.user-input-box input,
+select {
+  height: 40px;
+  width: 100%;
+  border-radius: 7px;
+  outline: none; /* to remove outline that shows when active*/
+  border: 1px solid grey;
+  padding: 0 10px;
+  appearance: none;
+}
+.email-box {
+  width: 100%;
+  padding-bottom: 15px;
+}
+.email-box input {
+  width: 100%;
+  height: 40px;
+  border-radius: 7px;
+  outline: none;
+  border: 1px solid grey;
+  padding: 0 10px;
+}
+
+.form-submit-btn input {
+  cursor: pointer;
+}
+
+.form-submit-btn {
+  margin-top: 10px;
+}
+
+.form-submit-btn input {
+  display: block;
+  width: 100%;
+  font-size: 20px;
+  padding: 10px;
+  border: none;
+  border-radius: 3px;
+  color: #ccc;
+  background: rgba(65, 105, 225, 0.7);
+  transition: 300ms;
+}
+
+.form-submit-btn input:hover {
+  background: rgba(0, 0, 205, 0.7);
+  color: #fafafa;
+}

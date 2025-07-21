@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <title>Academy Registration Form</title>
+  <meta name="viewport" content="width=device-width,
+      initial-scale=1.0" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <!-- Disclaimer Modal -->
+  <!--<div id="disclaimer-modal">-->
+  <!--  <div class="disclamer-container">-->
+  <!--    <h2 class="disclamer-header">⚠️ Important Notice</h2>-->
+  <!--    <p class="disclamer-text">This form includes a <strong>mandatory assessment link</strong> that will appear-->
+  <!--      <strong>after submission</strong>.-->
+  <!--    </p>-->
+  <!--    <p class="disclamer-text"><strong>Please ensure you:</strong></p>-->
+  <!--    <ul>-->
+  <!--      <li class="disclamer-text">Complete the assessment immediately after submitting the form</li>-->
+  <!--      <li class="disclamer-text">Have set aside 10 minutes for the assessment</li>-->
+  <!--      <li class="disclamer-text">Choose the Interview slot after the assessment</li>-->
+        
+  <!--    </ul>-->
+  <!--    <p class="disclamer-text">Please Note: The Interview Will be offline.</p>-->
+  <!--    <p class="disclamer-text">Incomplete assessments will disqualify your submission.</p>-->
+  <!--    <button id="agree-btn" class="disclamer-button">Continue to Form</button>-->
+  <!--  </div>-->
+  <!--</div>-->
+  
+  
+    <div class="container" id="main-form">
+      <div>
+        <img class="logo" src="imgs/logo_mons.png" alt="logo">
+        <h1 class="form-title">Aviation Club</h1>
+      </div>
+
+
+      <form action="" method="post">
+      <!--<form action="register.php" method="post">-->
+        <div class="main-user-info">
+          <div class="user-input-box">
+            <label for="fullName">Full Name (In English)</label>
+            <input type="text" id="fullName" name="fullName" placeholder="Enter Full Name" required />
+          </div>
+          <div class="user-input-box">
+            <label for="phoneNumber">Phone Number</label>
+            <input type="number" id="phoneNumber" name="phoneNumber" placeholder="Enter Phone Number" min="01000000000"
+              max="01599999999" required />
+          </div>
+          <div class=" email-box">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" placeholder="Enter Email" required />
+          </div>
+          <div class="user-input-box">
+            <label for="academicYear">Academic Year</label>
+            <select name="academicYear" id="academicYear" required>
+              <option value="" selected="true" disabled="disabled">Academic Year</option>
+              <option value="freshmen">Freshmen</option>
+              <option value="sophomore">Sophomore</option>
+              <option value="junior">Junior</option>
+              <option value="senior 1">Senior 1</option>
+              <option value="senior 2">Senior 2</option>
+            </select>
+          </div>
+          <div class="user-input-box">
+            <label for="department">Department</label>
+            <select name="department" id="department" required>
+              <option value="" selected="true" disabled="disabled">Department</option>
+              <option value="electrical">Electrical</option>
+              <option value="mechanical">Mechanical</option>
+              <option value="architecture">Architecture</option>
+              <option value="civil">Civil</option>
+            </select>
+          </div>
+
+          <div class="user-input-box">
+            <label for="first_preference">First Preference</label>
+            <select name="first_preference" id="first_preference" required>
+              <option value="" selected="true" disabled="disabled">First Preference</option>
+              <option value="Web Development">Web Development Workshop</option>
+              <option value="Arduino">Arduino Workshop</option>
+              <option value="Embedded">Embedded Workshop</option>
+              <option value="KNX">KNX Workshop</option>
+              <option value="Jet Engine">Jet Engine Workshop</option>
+              <option value="SolidWorks">SolidWorks Workshop</option>
+              <option value="Automotive">Automotive Workshop</option>
+              <option value="Architectural Revit">Architectural Revit Workshop</option>
+              <option value="Structural Analysis">Structural Analysis Workshop</option>
+            </select>
+          </div>
+          <div class="user-input-box">
+            <label for="second_preference">Second Preference</label>
+            <select name="second_preference" id="second_preference" required>
+              <option value="" selected="true" disabled="disabled">Second Preference</option>
+              <option value="Web Development">Web Development Workshop</option>
+              <option value="Arduino">Arduino Workshop</option>
+              <option value="Embedded">Embedded Workshop</option>
+              <option value="KNX">KNX Workshop</option>
+              <option value="Jet Engine">Jet Engine Workshop</option>
+              <option value="SolidWorks">SolidWorks Workshop</option>
+              <option value="Automotive">Automotive Workshop</option>
+              <option value="Architectural Revit">Architectural Revit Workshop</option>
+              <option value="Structural Analysis">Structural Analysis Workshop</option>
+            </select>
+          </div>
+
+        </div>
+
+        <div class="form-submit-btn">
+          <input type="submit" value="Register">
+        </div>
+      </form>
+    </div>
+ 
+  <script src="script.js"></script>
+</body>
+
+</html>

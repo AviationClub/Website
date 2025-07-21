@@ -1,0 +1,26 @@
+[09-Apr-2025 17:09:26 UTC] PHP Warning:  file_get_contents(https://docs.google.com/forms/u/0/de/1FAIpQLScaNVeoHs3wzfk9ejnXprVjsZGcnnH8ZpSsN8ab-q32cC7sjw/formResponse?entry.2098490856=Mazen+Essam+Eldin+Helmy&amp;entry.824023913=01111265118&amp;entry.1569261934=mazenessam2011%40outlook.com&amp;entry.1996635909=sophomore&amp;entry.1561298937=architecture&amp;entry.920172784=option_2&amp;entry.1456972979=option_3): Failed to open stream: HTTP request failed! HTTP/1.1 404 Not Found
+ in /home/aviationclub2/public_html/Testac2025/register.php on line 127
+[09-Apr-2025 17:14:06 UTC] PHP Parse error:  syntax error, unexpected token "<" in /home/aviationclub2/public_html/Testac2025/register.php on line 114
+[09-Apr-2025 17:14:14 UTC] PHP Parse error:  syntax error, unexpected token "<" in /home/aviationclub2/public_html/Testac2025/register.php on line 114
+[09-Apr-2025 17:32:57 UTC] PHP Warning:  file_get_contents(https://docs.google.com/forms/u/0/de/1FAIpQLScaNVeoHs3wzfk9ejnXprVjsZGcnnH8ZpSsN8ab-q32cC7sjw/formResponse?entry.2098490856=mmnewwww&amp;entry.824023913=01111265118&amp;entry.1569261934=mazen22%40hotmail.com&amp;entry.1996635909=sophomore&amp;entry.1561298937=mechanical&amp;entry.920172784=option_2&amp;entry.1456972979=option_1): Failed to open stream: HTTP request failed! HTTP/1.1 404 Not Found
+ in /home/aviationclub2/public_html/Testac2025/register.php on line 127
+[18-Apr-2025 23:28:53 UTC] PHP Fatal error:  Uncaught Error: Undefined constant "error" in /home/aviationclub2/public_html/ac2025/register.php:162
+Stack trace:
+#0 {main}
+  thrown in /home/aviationclub2/public_html/ac2025/register.php on line 162
+[18-Apr-2025 23:28:58 UTC] PHP Fatal error:  Uncaught Error: Undefined constant "error" in /home/aviationclub2/public_html/ac2025/register.php:162
+Stack trace:
+#0 {main}
+  thrown in /home/aviationclub2/public_html/ac2025/register.php on line 162
+[18-Apr-2025 23:29:01 UTC] PHP Fatal error:  Uncaught Error: Undefined constant "error" in /home/aviationclub2/public_html/ac2025/register.php:162
+Stack trace:
+#0 {main}
+  thrown in /home/aviationclub2/public_html/ac2025/register.php on line 162
+[18-Apr-2025 23:29:11 UTC] PHP Fatal error:  Uncaught Error: Undefined constant "error" in /home/aviationclub2/public_html/ac2025/register.php:162
+Stack trace:
+#0 {main}
+  thrown in /home/aviationclub2/public_html/ac2025/register.php on line 162
+[18-Apr-2025 23:29:45 UTC] PHP Fatal error:  Uncaught Exception: This is an error message in /home/aviationclub2/public_html/ac2025/register.php:162
+Stack trace:
+#0 {main}
+  thrown in /home/aviationclub2/public_html/ac2025/register.php on line 162
