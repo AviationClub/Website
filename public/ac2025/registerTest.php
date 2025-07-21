@@ -5,18 +5,116 @@ $db_host = 'localhost';      // Your database host (usually 'localhost')
 $db_name = 'aviationclub2_Forms';  // Your database name
 $db_user = 'aviationclub2_main';      // Your database username
 $db_pass = 'fULDwi0Mpmfi ';      // Your database password
+function failReturnResponse($message = '') {
+  $title ='Registration failed';
+  $header = 'or Contact us on Facebook';
+  
+  echo '<!DOCTYPE html>
+  <html lang="en">
+  <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>' . htmlspecialchars($title) . '</title>
+      <style>
+      * {
+padding: 0;
+margin: 0;
+box-sizing: border-box;
+font-family: sans-serif;
+}
+         body {
+                display: flex;
+                height: 100vh;
+                justify-content: center;
+                align-items: center;
+                background: url(imgs/main_bg7.jpg);
+                background-size: cover;
+                background-position: center;
+          }
+          .container {
+                width: 100%;
+                max-width: 700px;
+                background: rgba(0, 0, 0, 0.6);
+                padding: 28px;
+                margin: 0 28px;
+                border-radius: 10px;
+                box-shadow: inset -2px 2px 2px #9b9b9b;
+              }
+              
+              .logo {
+                display: block;
+                margin-left: auto;
+                margin-right: auto;
+                width: 60%;
+              }
+              
+              .form-title {
+                font-size: 26px;
+                font-weight: 600;
+                text-align: center;
+                padding-bottom: 6px;
+                color: #fafafa;
+                text-shadow: 2px 2px 2px #101010;
+                border-bottom: solid 1px #9b9b9b;
+              }
 
-// Function to return the HTML response
-function returnResponse($success, $message = '') {
-    $title = $success ? '' : 'Registration failed';
-    $header = $success ? '' : 'or Contact us on Facebook';
+              .title{
+                font-size: 24px;
+                font-weight: 600;
+                text-align: center;
+                padding: 6px;
+                color: #fafafa;
+              }
+              .message {
+                color: white;
+                text-align: center;
+                margin-top: 20px;
+                font-size: 22px;
+              }
+         @media (max-width: 700px) {
+            .container, .logo {
+              min-width: 300px;
+            }
+          }
+          @media (max-width: 415px) {
+                .logo {
+                  min-width: 250px;
+                }
+              }
+              @media (max-width: 375px) {
+                .logo {
+                  min-width: 200px;
+                }
+                .form-title {
+                  font-size: 20px;
+                }
+              }
+      </style>
+  </head>
+  <body>
+      <div class="container">
+       <div>
+        <img class="logo" src="imgs/logo_mons.png" alt="logo">
+        <h1 class="form-title">Aviation Club</h1>
+      </div>
+      <h1 class="title">' . htmlspecialchars($title) . '</h1>
+      <p class="message">' . htmlspecialchars($message) . '</p>
+      <p class="message">or Contact us on <a class="message" href="https://m.me/egaviationclub" target="_blank">Facebook</a></p>
+      </div>
+  </body>
+  </html>';
+  exit();
+}
+
+function successReturnResponse($message = '') {
+ 
     
     echo '<!DOCTYPE html>
     <html lang="en">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>' . htmlspecialchars($title) . '</title>
+        <title>Registration Succeed</title>
         <style>
         * {
   padding: 0;
@@ -59,7 +157,12 @@ function returnResponse($success, $message = '') {
                   text-shadow: 2px 2px 2px #101010;
                   border-bottom: solid 1px #9b9b9b;
                 }
-
+                .text-container{
+                    display:flex;
+                    flex-direction:column;
+                    justify-content:center;
+                    align-items:center;
+                }
                 .title{
                   font-size: 24px;
                   font-weight: 600;
@@ -72,6 +175,12 @@ function returnResponse($success, $message = '') {
                   text-align: center;
                   margin-top: 20px;
                   font-size: 22px;
+                }
+                  .small-message {
+                  color: white;
+                  text-align: center;
+                  margin-top: 10px;
+                  font-size: 14px;
                 }
            @media (max-width: 700px) {
               .container, .logo {
@@ -99,9 +208,14 @@ function returnResponse($success, $message = '') {
           <img class="logo" src="imgs/logo_mons.png" alt="logo">
           <h1 class="form-title">Aviation Club</h1>
         </div>
-        <h1 class="title">' . htmlspecialchars($title) . '</h1>
-        <p class="message">' . htmlspecialchars($message) . '</p>
-        <p class="message">' . htmlspecialchars($header) . '</p>
+        <div class="text-container">
+        <p class="message">' . htmlspecialchars($message) . ' </p>
+        <p class="message">We will contact you soon</p>
+        <p class="small-message">(Please don\'t fill this form again)</p>
+      <p class="message">Assessment QR</p>
+      <img src="imgs/qr.svg" alt="QR Code" width="200" height="200">
+      <a class="message" href="https://forms.office.com/r/BSYeQMVKen">Or Click Here</a>
+      </div>
         </div>
     </body>
     </html>';
@@ -112,7 +226,7 @@ try {
     $pdo = new PDO("mysql:host=$db_host;dbname=$db_name", $db_user, $db_pass);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch (PDOException $e) {
-    returnResponse(false, "Database connection failed");
+  failReturnResponse("Database connection failed");
 }
 
 // Process form submission
@@ -125,7 +239,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     foreach ($requiredFields as $field) {
         if (empty($_POST[$field])) {
-            returnResponse(false, "All fields are required");
+          failReturnResponse("All fields are required");
         }
     }
 
@@ -139,12 +253,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Validate email
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        returnResponse(false, "Invalid email format");
+      failReturnResponse("Invalid email format");
     }
 
     // Validate phone number length (assuming Egyptian numbers)
     if (strlen($phoneNumber) != 11) {
-        returnResponse(false, "Phone number must be 11 digits");
+      failReturnResponse("Phone number must be 11 digits");
     }
 
     // Database transaction
@@ -215,7 +329,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $queryString = http_build_query($fields);
         $context = stream_context_create(['http' => ['ignore_errors' => true]]);
         $response = file_get_contents("$googleFormUrl?$queryString", false, $context);
-          
+       
         if ($response === false) {
             throw new Exception("");
         }
@@ -223,13 +337,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $pdo->commit();
         if($existingRecord)
         {
-            returnResponse(true, "Update successful!");
+          successReturnResponse("Update successful!");
         }else{
-            returnResponse(true, "Registration successful!");
+          successReturnResponse("Registration successful!");
         }
     } catch (Exception $e) {
         $pdo->rollBack();
-        returnResponse(false, "Please Try Again " );
+        failReturnResponse("Please Try Again " );
     }
 } else {
     // Not a POST request
