@@ -201,12 +201,13 @@
 //     body: html,
 //   };
 // }
+// api/SubmitFormAC25.js
 module.exports = async function (context, req) {
-  const { name, email } = req.body;
-  context.log("Form submitted:", name, email);
-
+  context.log("Function running...");
+  const body = req.body;
+  context.log("Form submission:", body);
   context.res = {
     status: 200,
-    body: `Received submission for ${name} (${email})`,
+    body: { message: "Received!", data: body },
   };
 };
