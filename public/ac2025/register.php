@@ -1,4 +1,3 @@
-
 <?php
 // Database configuration
 $db_host = 'aviationclub.database.windows.net';      // Your database host (usually 'localhost')
