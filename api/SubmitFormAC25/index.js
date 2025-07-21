@@ -50,13 +50,14 @@ module.exports = async function (context, req) {
   const db_pass = "Aviation@Mazen2024";
 
   try {
+    console.log("Connecting to DB...");
     const conn = await mysql.createConnection({
       host: db_host,
       user: db_user,
       password: db_pass,
       database: db_name,
     });
-
+    console.log("DB connection successful");
     const [existing] = await conn.execute(
       "SELECT id FROM academy25 WHERE phone_number = ?",
       [phoneNumber],
