@@ -66,7 +66,7 @@ module.exports = async function (context, req) {
 
     const [existing] = await conn.execute(
       "SELECT id FROM academy25 WHERE phone_number = ?",
-      [phoneNumber]
+      [phoneNumber],
     );
 
     context.log("Query executed. Existing record count:", existing.length);
@@ -86,14 +86,14 @@ module.exports = async function (context, req) {
           first_preference,
           second_preference,
           phoneNumber,
-        ]
+        ],
       );
       context.log("Update completed.");
     } else {
       context.log("Inserting new record...");
       await conn.execute(
         `INSERT INTO academy25 
-          (full_name, phone_number, email, academic_year, department, first_preference, second_preference)
+          (full_name, phone_number, email, academic_year, department, first_preference, second_preference,registration_date)
           VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [
           fullName,
@@ -103,7 +103,8 @@ module.exports = async function (context, req) {
           department,
           first_preference,
           second_preference,
-        ]
+          new Date(),
+        ],
       );
       context.log("Insert completed.");
     }
@@ -134,7 +135,7 @@ module.exports = async function (context, req) {
     return sendHTML(
       context,
       true,
-      existing.length > 0 ? "Update successful!" : "Registration successful!"
+      existing.length > 0 ? "Update successful!" : "Registration successful!",
     );
   } catch (err) {
     const errorMessage = `Internal server error: ${err.message}`;
