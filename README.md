@@ -1,4 +1,6 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Aviation Website 
+## Thanks to:
+Thanks to @Ezzat-Abdelrazek-255 for creating our new website!
 
 ## Getting Started
 
