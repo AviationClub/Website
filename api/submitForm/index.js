@@ -29,7 +29,7 @@ module.exports = async function (context, req) {
       VALUES 
         (@full_name, @phone_number, @email, @academic_year, @department, @first_preference, @second_preference, GETDATE())
     `;
-
+    
     const request = new sql.Request();
     request.input("full_name", sql.VarChar, fullName);
     request.input("phone_number", sql.VarChar, phoneNumber);
@@ -48,7 +48,7 @@ module.exports = async function (context, req) {
   } catch (err) {
     context.res = {
       status: 500,
-      body: "❌ Error: " + err.message + req.body.fullName,
+      body: "❌ Error: " + err.message,
     };
   }
 };
