@@ -10,7 +10,8 @@ module.exports = async function (context, req) {
     first_preference,
     second_preference,
   } = req.body;
-
+  console.log(req.body);
+  console.log(fullName);
   try {
     const config = {
       user: "Aviationclub2",
