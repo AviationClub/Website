@@ -18,8 +18,8 @@ document.querySelector("form").addEventListener("submit", async (e) => {
     body: JSON.stringify(data),
   });
 
-  const text = await res.text();
-  alert(text);
+  const html = await res.text();
+  document.documentElement.innerHTML = html;
 });
 
 // Handle disclaimer buttons

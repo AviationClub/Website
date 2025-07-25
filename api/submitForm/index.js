@@ -244,10 +244,10 @@ module.exports = async function (context, req) {
   // Database connection
   try {
     const config = {
-      user: "Aviationclub2",
-      password: "Aviation@Mazen2024",
-      server: "aviationclub.database.windows.net", // e.g. yourserver.database.windows.net
-      database: "aviationclub",
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      server: process.env.DB_SERVER,
+      database: process.env.DB_NAME,
       options: {
         encrypt: true,
       },
