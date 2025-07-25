@@ -10,8 +10,6 @@ module.exports = async function (context, req) {
     first_preference,
     second_preference,
   } = req.body;
-  console.log(req.body);
-  console.log(fullName);
   try {
     const config = {
       user: "Aviationclub2",
@@ -50,7 +48,7 @@ module.exports = async function (context, req) {
   } catch (err) {
     context.res = {
       status: 500,
-      body: "❌ Error: " + err.message,
+      body: "❌ Error: " + err.message + req.body.fullName,
     };
   }
 };
