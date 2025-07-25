@@ -7,7 +7,7 @@ function failureResponse(message = "") {
   <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>' . htmlspecialchars($title) . '</title>
+     <title>${title}</title>
       <style>
       * {
 padding: 0;
@@ -97,7 +97,7 @@ font-family: sans-serif;
   </body>
   </html>`;
 }
-function successResponse() {
+function successResponse(message = "") {
   return `<!DOCTYPE html>
     <html lang="en">
     <head>
@@ -316,7 +316,7 @@ module.exports = async function (context, req) {
     context.res = {
       status: 500,
       headers: { "Content-Type": "text/html" },
-      body: failureResponse("Please Try Again"),
+      body: failureResponse("Please Try Again" + err.message),
     };
   } finally {
     sql.close();
