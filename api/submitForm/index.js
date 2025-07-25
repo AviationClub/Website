@@ -188,7 +188,7 @@ function successResponse(message = "") {
         </div>
         <p class="message">${message}</p>
       <p class="message">Assessment QR</p>
-      <img src="qr.svg" alt="Description" width="100" height="100">
+      <img src="imgs/qr.svg" alt="QR Code" width="100" height="100">
       <a class="message" href="https://forms.office.com/r/BSYeQMVKen">Or Click Here</a>
         </div>
     </body>

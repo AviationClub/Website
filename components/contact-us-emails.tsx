@@ -10,7 +10,7 @@ import { useGSAP } from "@gsap/react";
 import { horizontalLoop } from "@/utils";
 
 // Animations
-const animateEmails = function() {
+const animateEmails = function () {
   const emailElements = gsap.utils.toArray(".email");
   horizontalLoop(emailElements, {
     speed: 0.8,
@@ -37,10 +37,10 @@ const ContactUsEmails = () => {
         <Link
           key={i}
           className="email flex items-center gap-[max(8px,1.6rem)]"
-          href="mailto: aviationclub@gmail.com"
+          href="mailto: aviationclubeg@outlook.com"
         >
           <p className="font-sans text-[max(60px,12.8rem)] leading-none transition-colors hover:text-brand-yellow">
-            Aviationclub@gmail.com
+            Aviationclubeg@outlook.com
           </p>
           <div className="w-[max(50px,11.2rem)]">
             <img
