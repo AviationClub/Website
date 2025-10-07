@@ -3,7 +3,7 @@ document.querySelector("form").addEventListener("submit", async (e) => {
   e.preventDefault();
   
   // Show loading state
-  const submitBtn = e.target.querySelector('button[type="submit"]');
+  const submitBtn = e.target.querySelector('input[type="submit"]');
   const originalText = submitBtn.textContent;
   submitBtn.disabled = true;
   submitBtn.textContent = 'Submitting...';
