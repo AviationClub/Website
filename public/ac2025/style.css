@@ -157,7 +157,7 @@ select {
   appearance: none;
   padding: 8px 30px 8px 10px; /* Add space for dropdown arrow */
 }
-.form-submit-btn input {
+.form-submit-btn button {
   cursor: pointer;
 }
 
@@ -165,7 +165,7 @@ select {
   margin-top: 10px;
 }
 
-.form-submit-btn input {
+.form-submit-btn button {
   display: block;
   width: 100%;
   margin-top: 10px;
@@ -177,7 +177,7 @@ select {
   background: rgba(65, 105, 225, 0.7);
 }
 
-.form-submit-btn input:hover {
+.form-submit-btn button:hover {
   background: rgba(0, 0, 205, 0.7);
   color: #fafafa;
 }
