@@ -293,7 +293,7 @@ module.exports = async function (context, req) {
 
     // Send to Google Form
     const googleFormUrl =
-      "https://docs.google.com/forms/d/e/1FAIpQLScaNVeoHs3wzfk9ejnXprVjsZGcnnH8ZpSsN8ab-q32cC7sjw/formResponse";
+      "https://docs.google.com/forms/d/e/1FAIpQLScaNVeoHs3wzfk9ejnXprVjsZGcnnH8ZpSsN8ab-q32cC7sjw/formResponse?usp=pp_url";
     const googleData = new URLSearchParams({
       "entry.2098490856": fullName,
       "entry.824023913": phoneNumber,
