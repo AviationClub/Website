@@ -1,0 +1,169 @@
+* {
+  font-family: "Segoe UI", sans-serif;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  min-height: 100vh;
+  background: url('Background.png') no-repeat center center/cover;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  padding: 15px;
+}
+
+/* ✅ Responsive container */
+.container {
+  width: 100%;
+  max-width: 700px;
+  padding: 25px;
+  border-radius: 20px;
+
+  background: rgba(20, 20, 40, 0.75);
+  backdrop-filter: blur(12px);
+
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+}
+
+h2 {
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+/* ✅ Inputs */
+input, select {
+  width: 100%;
+  padding: 14px;
+  margin: 15px 0;
+  border-radius: 10px;
+  border: 1px solid #9d4edd;
+  background: rgba(0,0,0,0.4);
+  color: white;
+  font-size: 16px;
+}
+
+/* ✅ Buttons */
+button {
+  width: 100%;
+  padding: 14px;
+  margin-top: 15px;
+  background: linear-gradient(45deg, #9d4edd, #c77dff);
+  border: none;
+  border-radius: 12px;
+  color: white;
+  cursor: pointer;
+  font-size: 16px;
+  transition: 0.2s;
+}
+
+button:hover {
+  transform: scale(1.03);
+}
+
+.hidden {
+  display: none;
+}
+
+/* ✅ Slots */
+#slots {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 15px;
+  max-height: 50vh;
+  overflow-y: auto;
+  padding-right: 5px;
+}
+
+.slot {
+  padding: 14px;
+  border-radius: 12px;
+  text-align: center;
+  font-weight: bold;
+  font-size: 15px;
+}
+
+/* Available */
+.available {
+  background: rgba(0,255,150,0.1);
+  border: 1px solid #00ffb3;
+  color: #00ffb3;
+  cursor: pointer;
+}
+
+.available:hover {
+  background: #00ffb3;
+  color: black;
+}
+
+/* Full */
+.full {
+  background: rgba(255,0,80,0.1);
+  border: 1px solid #ff4d6d;
+  color: #ff4d6d;
+}
+
+/* Selected */
+.selected {
+  background: #00ffb3 !important;
+  color: black !important;
+}
+
+/* Filter */
+#dayFilter {
+  padding: 14px;
+  font-size: 16px;
+}
+
+/* Text */
+#Selectword {
+  text-align: center;
+  font-size: 16px;
+  margin-top: 15px;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(45deg, #9b5cff, #6a11cb);
+  border-radius: 10px;
+}
+
+/* 📱 MOBILE OPTIMIZATION */
+@media (max-width: 600px) {
+
+  .container {
+    padding: 18px;
+    border-radius: 15px;
+  }
+
+  h2 {
+    font-size: 20px;
+  }
+
+  input, select {
+    font-size: 14px;
+    padding: 12px;
+  }
+
+  button {
+    font-size: 14px;
+    padding: 12px;
+  }
+
+  .slot {
+    font-size: 14px;
+    padding: 12px;
+  }
+
+  #slots {
+    max-height: 45vh;
+  }
+}

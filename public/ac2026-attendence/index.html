@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Booking System</title>
+
+  <link rel="stylesheet" href="style.css">
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+</head>
+<body>
+
+<div class="container">
+
+<h2>Register</h2>
+<form id="form">
+  <input type="text" id="name" placeholder="Name" required>
+  <input type="email" id="email" placeholder="Email" required>
+  <button type="submit">Next</button>
+</form>
+
+<div id="calendar" class="hidden">
+  <h2 id="Selectword">Select Day & Time</h2>
+
+
+  <select id="dayFilter">
+    <option value="All">All Days</option>
+  </select>
+
+  <div id="slots"></div>
+  <button id="submitBooking">Submit Selection</button>
+
+</div>
+
+</div>
+
+<script src="script.js"></script>
+
+</body>
+</html>
