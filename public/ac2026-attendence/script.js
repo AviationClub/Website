@@ -93,8 +93,11 @@ async function loadUserBookings() {
   if (doc.exists) {
 if (doc.exists) {
   const data = doc.data();
+if (data.slots) {
   selectedSlots = data.slots.map(s => s.slotId);
-
+} else {
+  selectedSlots = [];
+}
   // ✅ LOAD EXISTING ID
   if (data.userId) {
     userId = data.userId;
