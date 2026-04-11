@@ -12,10 +12,11 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-// 🔒 MAX SELECTION
-const MAX_SELECTION = 6;
+//  MAX SELECTION
+const MAX_SELECTION = 20;
 
 // STATE
+let userId = null;
 let user = {};
 let allSlots = [];
 let selectedSlots = [];
@@ -29,14 +30,17 @@ const slots = document.getElementById("slots");
 const dayFilter = document.getElementById("dayFilter");
 const submitBooking = document.getElementById("submitBooking");
 
-// =======================
-// 🟢 FORM SUBMIT
-// =======================
+//  Name / Email submit
+
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
 
   user.name = name.value.trim();
   user.email = email.value.toLowerCase().trim();
+  user.committee = document.getElementById("committee").value;
+
+  // ✅ GET OR CREATE ID
+  userId = await getOrCreateUserId(user.email);
 
   form.classList.add("hidden");
   calendar.classList.remove("hidden");
@@ -44,25 +48,72 @@ form.addEventListener("submit", async (e) => {
   await loadUserBookings();
   await loadSlots();
 });
+// GET OR CREATE USER ID
+async function getOrCreateUserId(email) {
+  const counterRef = db.collection("meta").doc("counter");
+  const userRef = db.collection("bookings").doc(email);
 
-// =======================
-// 🟢 LOAD USER BOOKINGS
-// =======================
+  return db.runTransaction(async (t) => {
+    const userDoc = await t.get(userRef);
+
+    // ✅ If user already has ID → return it
+    if (userDoc.exists && userDoc.data().userId) {
+      return userDoc.data().userId;
+    }
+
+    // 🔢 Get counter
+    const counterDoc = await t.get(counterRef);
+
+    let current = 0;
+    if (counterDoc.exists) {
+      current = counterDoc.data().value;
+    }
+
+    const newIdNumber = current + 1;
+    const newId = "A" + newIdNumber;
+
+    // ✅ Update counter
+    t.set(counterRef, { value: newIdNumber });
+
+    return newId;
+  });
+}
+//  LOAD USER BOOKINGS
 async function loadUserBookings() {
   const ref = db.collection("bookings").doc(user.email);
   const doc = await ref.get();
 
   if (doc.exists) {
-    const data = doc.data();
-    selectedSlots = data.slots.map(s => s.slotId);
+if (doc.exists) {
+  const data = doc.data();
+  selectedSlots = data.slots.map(s => s.slotId);
 
-    alert("Welcome back! Your previous selections are loaded.");
+  // ✅ LOAD EXISTING ID
+  if (data.userId) {
+    userId = data.userId;
+  }
+
+  alert(`Welcome back!\nYour ID: ${userId}`);
+}
   }
 }
+// ✅ SORT SLOTS BY TIME
+function convertTo24(timeStr) {
+  // ✅ Take only the start time (before "-")
+  const start = timeStr.split("-")[0]; // "9:00"
 
-// =======================
-// 🟢 LOAD SLOTS
-// =======================
+  // Get AM/PM
+  const modifier = timeStr.includes("PM") ? "PM" : "AM";
+
+  let [hours, minutes] = start.split(":").map(Number);
+
+  if (modifier === "PM" && hours !== 12) hours += 12;
+  if (modifier === "AM" && hours === 12) hours = 0;
+
+  return hours * 60 + minutes;
+}
+
+//  LOAD SLOTS
 async function loadSlots() {
   const snapshot = await db.collection("timeslots").get();
 
@@ -77,13 +128,26 @@ async function loadSlots() {
     daysSet.add(data.day);
   });
 
-  populateDays([...daysSet]);
-  renderSlots();
+
+allSlots.sort((a, b) => {
+  const dayOrder = {
+  "Tuesday": 1,
+  "Wednesday": 2,
+  "Thursday": 3
+};
+  // sort by day first
+  if (dayOrder[a.day] !== dayOrder[b.day]) {
+    return dayOrder[a.day] - dayOrder[b.day];
+  }
+
+  // then by time
+  return convertTo24(a.time) - convertTo24(b.time);
+});
+populateDays([...daysSet]);
+renderSlots();
 }
 
-// =======================
-// 🟢 FILTER
-// =======================
+//  FILTER
 function populateDays(days) {
   dayFilter.innerHTML = '<option value="All">All Days</option>';
 
@@ -97,9 +161,7 @@ function populateDays(days) {
   dayFilter.onchange = renderSlots;
 }
 
-// =======================
-// 🟢 RENDER SLOTS (FIXED)
-// =======================
+// 🟢 RENDER SLOTS 
 function renderSlots() {
   slots.innerHTML = "";
 
@@ -133,9 +195,8 @@ function renderSlots() {
   });
 }
 
-// =======================
-// 🟢 SELECT / DESELECT
-// =======================
+
+// SELECT / DESELECT
 function toggleSelect(data) {
   if (selectedSlots.includes(data.id)) {
     selectedSlots = selectedSlots.filter(id => id !== data.id);
@@ -150,9 +211,7 @@ function toggleSelect(data) {
   renderSlots();
 }
 
-// =======================
-// 🟢 SUBMIT (CORRECT LOGIC)
-// =======================
+// 🟢 SUBMIT 
 submitBooking.onclick = async () => {
   if (selectedSlots.length === 0) {
     alert("Select at least one slot");
@@ -171,7 +230,7 @@ submitBooking.onclick = async () => {
         oldSlots = bookingDoc.data().slots.map(s => s.slotId);
       }
 
-      // 🔥 READ ALL FIRST
+      //  READ ALL FIRST
       const allIds = [...new Set([...oldSlots, ...selectedSlots])];
       const slotDocs = {};
 
@@ -180,7 +239,7 @@ submitBooking.onclick = async () => {
         slotDocs[id] = await t.get(ref);
       }
 
-      // 🔥 COMPUTE FINAL COUNTS (IMPORTANT FIX)
+      //  COMPUTE FINAL COUNTS (IMPORTANT FIX)
       const changes = {};
 
       // subtract old
@@ -193,7 +252,7 @@ submitBooking.onclick = async () => {
         changes[id] = (changes[id] || 0) + 1;
       }
 
-      // 🔥 APPLY CHANGES SAFELY
+      //  APPLY CHANGES SAFELY
       for (let id in changes) {
         const doc = slotDocs[id];
         const current = doc.data().booked;
@@ -209,7 +268,7 @@ submitBooking.onclick = async () => {
         });
       }
 
-      // 💾 SAVE USER DATA
+      //  SAVE USER DATA
       const slotObjects = selectedSlots.map(id => {
         const data = allSlots.find(s => s.id === id);
         return {
@@ -219,18 +278,20 @@ submitBooking.onclick = async () => {
         };
       });
 
-      t.set(bookingRef, {
-        name: user.name,
-        email: user.email,
-        slots: slotObjects,
-        updatedAt: new Date()
-      });
+t.set(bookingRef, {
+  name: user.name,
+  email: user.email,
+  committee: user.committee,
+  userId: userId,
+  slots: slotObjects,
+  updatedAt: new Date()
+});
 
     });
 
-    alert("Booking saved!");
+alert(`✅ Booking saved!\n\nYour ID: ${userId}`);
 
-    // 🔴 LOGOUT
+    //  LOGOUT
     selectedSlots = [];
     user = {};
 
@@ -245,33 +306,4 @@ submitBooking.onclick = async () => {
   }
 };
 
-// =======================
-// 🟢 CREATE SLOTS
-// =======================
-async function createSlots() {
-  const days = ["Tuesday", "Wednesday"];
-  const times = [
-    "9:00-10:00 AM",
-    "10:00-11:00 AM",
-    "11:00-12:00 AM",
-    "12:00-1:00 PM",
-    "1:00-2:00 PM",
-    "2:00-3:00 PM",
-    "3:00-4:00 PM"
-  ];
-
-  for (let day of days) {
-    for (let time of times) {
-      const id = day + "-" + time;
-
-      await db.collection("timeslots").doc(id).set({
-        day,
-        time,
-        max: 12,
-        booked: 0
-      });
-    }
-  }
-
-  alert("Slots created!");
-}
+// 🟡 CREATE SLOTS

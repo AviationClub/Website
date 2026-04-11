@@ -7,20 +7,22 @@
 
 body {
   min-height: 100vh;
+    display: flex;
+  flex-direction: column;
   background: url('Background.png') no-repeat center center/cover;
-  display: flex;
   justify-content: center;
   align-items: center;
   color: white;
   padding: 15px;
+
 }
 
-/* ✅ Responsive container */
+/*  container  */
 .container {
-  width: 100%;
-  max-width: 700px;
   padding: 25px;
   border-radius: 20px;
+  width: 700px;
+  box-sizing: border-box;
 
   background: rgba(20, 20, 40, 0.75);
   backdrop-filter: blur(12px);
@@ -33,8 +35,21 @@ h2 {
   text-align: center;
   margin-bottom: 10px;
 }
+.footer {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 25px;
+  color: rgba(255, 249, 249, 0.8);
+  font-family: "Segoe UI", sans-serif;
+  background-color: rgba(122, 17, 154, 0.1);
+    backdrop-filter: blur(12px);
 
-/* ✅ Inputs */
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 10px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+}
+/*  Inputs */
 input, select {
   width: 100%;
   padding: 14px;
@@ -45,8 +60,17 @@ input, select {
   color: white;
   font-size: 16px;
 }
+select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url('dropdown-arrow.png');
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 12px;
+}
 
-/* ✅ Buttons */
+/*  Buttons */
 button {
   width: 100%;
   padding: 14px;
@@ -68,7 +92,7 @@ button:hover {
   display: none;
 }
 
-/* ✅ Slots */
+/*  Slots section */
 #slots {
   display: flex;
   flex-direction: column;
@@ -137,16 +161,29 @@ button:hover {
 }
 
 /* 📱 MOBILE OPTIMIZATION */
+
+
+@media (max-width: 732px) {
+
+ 
+  .container {
+    width: 90%;
+  }
+}
 @media (max-width: 600px) {
+ body{
+    background: url('Backgroundsmall.png') no-repeat center center/cover;
+ }
+}
+
+@media (max-width: 480px) {
 
   .container {
-    padding: 18px;
-    border-radius: 15px;
+    min-width: 100%;
+    min-width: unset;
   }
 
-  h2 {
-    font-size: 20px;
-  }
+}
 
   input, select {
     font-size: 14px;
@@ -166,4 +203,7 @@ button:hover {
   #slots {
     max-height: 45vh;
   }
-}
+  .footer {
+    font-size: 20px;
+    padding: 8px;
+  }
