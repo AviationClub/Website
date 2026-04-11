@@ -186,7 +186,9 @@ function renderSlots() {
     div.classList.add("slot");
 
     const isSelected = selectedSlots.includes(data.id);
-    const isFull = data.booked >= data.max;
+const booked = data.booked || 0;
+const max = data.max || 0;
+const isFull = booked >= max;
 
     if (isFull && !isSelected) {
       div.classList.add("full");
@@ -235,10 +237,11 @@ submitBooking.onclick = async () => {
 
       const bookingDoc = await t.get(bookingRef);
 
-      let oldSlots = [];
-      if (bookingDoc.exists) {
-        oldSlots = bookingDoc.data().slots.map(s => s.slotId);
-      }
+   let oldSlots = [];
+if (bookingDoc.exists) {
+  const data = bookingDoc.data();
+  oldSlots = (data.slots || []).map(s => s.slotId || s);
+}
 
       //  READ ALL FIRST
       const allIds = [...new Set([...oldSlots, ...selectedSlots])];
@@ -279,14 +282,18 @@ submitBooking.onclick = async () => {
       }
 
       //  SAVE USER DATA
-      const slotObjects = selectedSlots.map(id => {
-        const data = allSlots.find(s => s.id === id);
-        return {
-          slotId: id,
-          day: data.day,
-          time: data.time
-        };
-      });
+   const slotObjects = selectedSlots
+  .map(id => {
+    const data = allSlots.find(s => s.id === id);
+    if (!data) return null;
+
+    return {
+      slotId: id,
+      day: data.day,
+      time: data.time
+    };
+  })
+  .filter(Boolean);
 
 t.set(bookingRef, {
   name: user.name,
