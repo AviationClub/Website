@@ -38,6 +38,10 @@ form.addEventListener("submit", async (e) => {
   user.name = name.value.trim();
   user.email = email.value.toLowerCase().trim();
   user.committee = document.getElementById("committee").value;
+  if (!user.committee) {
+  alert("Please select a committee");
+  return;
+}
 
   // ✅ GET OR CREATE ID
   userId = await getOrCreateUserId(user.email);
@@ -70,12 +74,15 @@ async function getOrCreateUserId(email) {
     }
 
     const newIdNumber = current + 1;
-    const newId = "A" + newIdNumber;
+const newId = "A" + newIdNumber;
 
-    // ✅ Update counter
-    t.set(counterRef, { value: newIdNumber });
+// ✅ Update counter
+t.set(counterRef, { value: newIdNumber });
 
-    return newId;
+// ✅ SAVE USER ID (THIS IS THE FIX)
+t.set(userRef, { userId: newId }, { merge: true });
+
+return newId;
   });
 }
 //  LOAD USER BOOKINGS
