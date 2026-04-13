@@ -141,13 +141,14 @@ else {
 });
   } catch (err) {
   console.error("❌ Database error:", err);
+
   context.res = {
     status: 500,
     headers: { "Content-Type": "application/json" },
     body: {
       success: false,
-      message: err.message,
+      message: "Something went wrong. Please try again later.",
     },
   };
-  } 
+}
 };
