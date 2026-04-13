@@ -26,6 +26,11 @@ if (!data.fullName || !data.email || !data.phoneNumber) {
   alert("Please fill all required fields ⚠️");
   return;
 }
+// ✅ Name validation (NO numbers)
+if (!/^[a-zA-Z\s'-]+$/.test(data.fullName)) {
+  alert("Name must contain only letters ❌");
+  return;
+}
 
 if (!data.department) {
   alert("Please select your department ⚠️");

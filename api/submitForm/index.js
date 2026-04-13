@@ -29,6 +29,14 @@ if (
   };
   return;
 }
+  if (!/^[a-zA-Z\s'-]+$/.test(cleanName)) {
+  context.res = {
+    status: 400,
+    headers: { "Content-Type": "application/json" },
+    body: { success: false, message: "Name must contain only letters." },
+  };
+  return;
+}
 
   if (!/^\d{11}$/.test(cleanPhone)) {
     context.res = {
@@ -48,6 +56,7 @@ if (
     };
     return;
   }
+  
 
   // Database connection
   try {
@@ -73,26 +82,40 @@ if (
     const existing = check.recordset[0];
 
 if (existing) {
-  // ✅ UPDATE (by phone OR email)
-  await sql.query`
-    UPDATE academy26 SET 
-      full_name = ${cleanName},
-      phone_number = ${cleanPhone},
-      email = ${cleanEmail},
-      academic_year = ${academicYear},
-      department = ${department},
-      first_preference = ${first_preference},
-      second_preference = ${second_preference}
-    WHERE phone_number = ${cleanPhone} OR email = ${cleanEmail}
-  `;
+  if (existing.phone_number === cleanPhone) {
+    await sql.query`
+      UPDATE academy26 SET 
+        full_name = ${cleanName},
+        phone_number = ${cleanPhone},
+        email = ${cleanEmail},
+        academic_year = ${academicYear},
+        department = ${department},
+        first_preference = ${first_preference},
+        second_preference = ${second_preference}
+      WHERE phone_number = ${cleanPhone}
+    `;
+  } else {
+    await sql.query`
+      UPDATE academy26 SET 
+        full_name = ${cleanName},
+        phone_number = ${cleanPhone},
+        email = ${cleanEmail},
+        academic_year = ${academicYear},
+        department = ${department},
+        first_preference = ${first_preference},
+        second_preference = ${second_preference}
+      WHERE email = ${cleanEmail}
+    `;
+  }
 
   context.res = {
     status: 200,
     headers: { "Content-Type": "application/json" },
     body: { success: true, message: "Your data has been updated successfully ✅" },
   };
+}
 
-} else {
+else {
   // ✅ INSERT
   await sql.query`
     INSERT INTO academy26 
@@ -107,6 +130,8 @@ if (existing) {
     body: { success: true, message: "Registration successful 🎉" },
   };
 }
+if (context.res?.body?.success) {
+  // send to Google Form
 
     // Send to Google Form
 
@@ -131,7 +156,8 @@ if (existing) {
     } catch (err) {
       console.error("❌ Google Form submission failed:", err.message);
     }
-  } catch (err) {
+  } }
+  catch (err) {
   console.error("❌ Database error:", err);
   context.res = {
     status: 500,
