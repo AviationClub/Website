@@ -67,8 +67,8 @@ submitBtn.classList.add("loading");
     }
 
     // ✅ success
-    window.location.replace("/ac2026/success.html");
-    
+window.location.replace(`/ac2026/success.html?msg=${encodeURIComponent(result.message)}`);    
+
   } catch (error) {
   console.error('Submission failed:', error);
   alert(error.message || "Something went wrong ❌");

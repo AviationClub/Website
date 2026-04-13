@@ -34,6 +34,14 @@
 
 </div>
   <p class="footer">Powered By : IT Team 👨🏻‍💻 </p>
+  <script>
+  const params = new URLSearchParams(window.location.search);
+  const msg = params.get("msg");
+
+  if (msg) {
+    document.querySelector(".success-box h2").textContent = msg;
+  }
+</script>
 
 </body>
 </html>
