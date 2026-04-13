@@ -57,8 +57,7 @@ submitBtn.classList.add("loading");
         }
 
         // ✅ success
-        window.location.replace("/success.html");
-
+      window.location.replace("/ac2026/success.html");
     
   } catch (error) {
     console.error('Submission failed:', error);
