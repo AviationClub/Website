@@ -70,43 +70,30 @@ if (
       },
     };
 
-    await sql.connect(config);
+    const pool = await sql.connect(config);
 
     // Check if phone number or email already exists
-    const check = await sql.query`
+    const check = await pool.request().query(`
   SELECT id, phone_number, email 
   FROM academy26 
-  WHERE phone_number = ${cleanPhone} OR email = ${cleanEmail}
-`;
+  WHERE phone_number = '${cleanPhone}' OR email = '${cleanEmail}'
+`);
 
     const existing = check.recordset[0];
+  
 
 if (existing) {
-  if (existing.phone_number === cleanPhone) {
-    await sql.query`
-      UPDATE academy26 SET 
-        full_name = ${cleanName},
-        phone_number = ${cleanPhone},
-        email = ${cleanEmail},
-        academic_year = ${academicYear},
-        department = ${department},
-        first_preference = ${first_preference},
-        second_preference = ${second_preference}
-      WHERE phone_number = ${cleanPhone}
-    `;
-  } else {
-    await sql.query`
-      UPDATE academy26 SET 
-        full_name = ${cleanName},
-        phone_number = ${cleanPhone},
-        email = ${cleanEmail},
-        academic_year = ${academicYear},
-        department = ${department},
-        first_preference = ${first_preference},
-        second_preference = ${second_preference}
-      WHERE email = ${cleanEmail}
-    `;
-  }
+  await pool.request().query(`
+    UPDATE academy26 SET 
+      full_name = '${cleanName}',
+      phone_number = '${cleanPhone}',
+      email = '${cleanEmail}',
+      academic_year = '${academicYear}',
+      department = '${department}',
+      first_preference = '${first_preference}',
+      second_preference = '${second_preference}'
+    WHERE id = ${existing.id}
+  `);
 
   context.res = {
     status: 200,
@@ -117,12 +104,12 @@ if (existing) {
 
 else {
   // ✅ INSERT
-  await sql.query`
-    INSERT INTO academy26 
-      (full_name, phone_number, email, academic_year, department, first_preference, second_preference, registration_date)
-    VALUES 
-      (${cleanName}, ${cleanPhone}, ${cleanEmail}, ${academicYear}, ${department}, ${first_preference}, ${second_preference}, GETDATE())
-  `;
+  await pool.request().query(`
+  INSERT INTO academy26 
+  (full_name, phone_number, email, academic_year, department, first_preference, second_preference, registration_date)
+  VALUES 
+  ('${cleanName}', '${cleanPhone}', '${cleanEmail}', '${academicYear}', '${department}', '${first_preference}', '${second_preference}', GETDATE())
+`);
 
   context.res = {
     status: 200,
@@ -130,8 +117,6 @@ else {
     body: { success: true, message: "Registration successful 🎉" },
   };
 }
-if (context.res?.body?.success) {
-  // send to Google Form
 
     // Send to Google Form
 
@@ -148,26 +133,21 @@ if (context.res?.body?.success) {
       "entry.1232000012": second_preference,
     });
     const fullUrl = `${googleFormUrl}?${params.toString()}`;
-    try {
-      await fetch(fullUrl, {
-        method: "GET",
-        mode: "no-cors",
-      });
-    } catch (err) {
-      console.error("❌ Google Form submission failed:", err.message);
-    }
-  } }
-  catch (err) {
+    fetch(fullUrl, {
+  method: "GET",
+  mode: "no-cors",
+}).catch(err => {
+  console.error("❌ Google Form failed:", err.message);
+});
+  } catch (err) {
   console.error("❌ Database error:", err);
   context.res = {
     status: 500,
     headers: { "Content-Type": "application/json" },
     body: {
       success: false,
-      message: "Something went wrong. Please try again later.",
+      message: err.message,
     },
   };
-  } finally {
-    sql.close();
-  }
+  } 
 };

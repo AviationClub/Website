@@ -1,20 +1,21 @@
 // handle backend
 document.querySelector("form").addEventListener("submit", async (e) => {
   e.preventDefault();
+
+  const submitBtn = document.getElementById("submitBtn");
+
+  // 🚫 prevent double click spam
   
-  // Show loading state
-    const submitBtn = document.getElementById("submitBtn");
-    if (!submitBtn) {
-    console.error("Submit button not found");
-    return;
-    }
-const originalText = submitBtn.textContent;
+  if (submitBtn.disabled) return;
+  const originalText = submitBtn.textContent;
+
+  
 
 //   collect data FIRST
 const data = {
   fullName: document.getElementById("name").value.trim(),
   phoneNumber: document.getElementById("tel").value.trim(),
-  email: document.getElementById("email").value.trim(),
+  email: document.getElementById("email").value.trim().toLowerCase(),
   academicYear: document.getElementById("academicyear").value,
   first_preference: document.getElementById("first_preference").value,
   second_preference: document.getElementById("second_preference").value,
@@ -31,9 +32,27 @@ if (!/^[a-zA-Z\s'-]+$/.test(data.fullName)) {
   alert("Name must contain only letters ❌");
   return;
 }
+if (!/^\d{11}$/.test(data.phoneNumber)) {
+  alert("Phone number must be 11 digits ❌");
+  return;
+}
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+if (!emailRegex.test(data.email)) {
+  alert("Invalid email format ❌");
+  return;
+}
 
 if (!data.department) {
   alert("Please select your department ⚠️");
+  return;
+}
+if (!data.academicYear) {
+  alert("Please select your academic year ⚠️");
+  return;
+}
+if (!data.first_preference || !data.second_preference) {
+  alert("Please select both preferences ⚠️");
   return;
 }
 
@@ -41,6 +60,7 @@ if (data.first_preference === data.second_preference) {
   alert("Preferences must be different ❌");
   return;
 }
+// after all validation passes
 
 // 🔥 STEP 3: disable button AFTER validation
 submitBtn.disabled = true;
@@ -71,8 +91,7 @@ window.location.replace(`/ac2026/success.html?msg=${encodeURIComponent(result.me
 
   } catch (error) {
   console.error('Submission failed:', error);
-  alert(error.message || "Something went wrong ❌");
-}
+  alert(error.message?.replace(/"/g, "") || "Something went wrong ❌");}
  finally {
     submitBtn.disabled = false;
     submitBtn.classList.remove("loading");  
