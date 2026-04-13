@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+     <title>Academy Registration Form</title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"  />
+    <link rel="stylesheet" href="style.css">
+     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700&display=swap" rel="stylesheet">
+  </head>
+
+  <body>
+    <!-- Container for the entire form -->
+    <div class="main-container">
+      <!-- the head of the form -->
+      <div class="head-container">
+        <img src="Imgs/logo.png" class="Logo" alt="Logo"/>
+        <h1>Aviation Academy 2026</h1>
+      </div>
+      <!-- the start of the actual form -->
+      <form class="form" id="form"> 
+
+        <!-- container for Name input field -->
+        <div class="input-container">
+          <label for="name">  Name (In English) </label>
+          <input
+            type="text"
+            name="name"
+            placeholder="Enter Your Full Name"
+            autocomplete="name"
+            id="name"
+            required
+          />
+        </div>
+
+
+        <!-- container for Email input field -->
+        <div class="input-container">
+          <label for="email">Email</label>
+          <input
+            type="email"
+            name="email"
+            id="email"
+            placeholder="Enter Your Email"
+            autocomplete="email"
+            required
+          />
+        </div>
+
+
+        <!-- container for Phone input field -->
+        <div class="input-container">
+          <label for="tel">Phone number (Linked to Whatsapp)</label>
+          <input
+            type="tel"
+            name="phoneNumber"
+            id="tel"
+            placeholder="Enter Your Phone Number"
+            pattern="01[0-9]{9}"
+            autocomplete="tel"
+            inputmode="numeric"
+            required
+          />
+        </div>
+
+
+        <!-- container for each Academic year field -->
+        <div class="input-container">
+          <label for="academicyear">Academic year</label>
+          <select name="academicyear" id="academicyear" required>
+            <option value="" selected disabled>Choose Your Academic Year</option>
+            <option value="freshman">Freshman</option>
+            <option value="sophomore">sophomore</option>
+            <option value="junior">Junior</option>
+            <option value="senior1">Senior 1</option>
+            <option value="senior2">Senior 2</option>
+
+
+          </select>
+        </div>
+
+
+        <!-- container for Department input field -->
+        <div class="input-container">
+          <label for="department">Department</label>
+          <select name="department" id="department" >
+            <option value="" selected disabled>Choose Your Department</option>
+            <option value="electrical">Electrical</option>
+            <option value="mechanical">Mechanical</option>
+            <option value="architecture">Architecture</option>
+            <option value="civil">Civil</option>
+            <option value="none">None</option>
+
+          </select>
+        </div>
+
+
+        <!-- container for each input field -->
+        <div class="input-container">
+          <label for="first_preference">First preference</label>
+          <select name="firstpreference" id="first_preference" required>
+            <option value="" selected disabled>Choose First preference</option>
+            <option value="AI/ML">AI/Machine learning</option>
+            <option value="UI/UX">UI/UX</option>
+            <option value="Web">Web Development</option>
+            <option value="Embedded">Embedded systems</option>
+            <option value="Arduino">Arduino</option>
+            <option value="MATLAB">MATLAB</option>
+            <option value="Solidworks">Solidworks</option>
+            <option value="Jet engine">Jet engine</option>
+            <option value="Automotive">Automotive</option>
+
+          </select>
+        </div>
+
+        <!-- container for each input field -->
+        <div class="input-container">
+          <label for="second_preference">Second preference</label>
+          <select name="secondpreference" id="second_preference" required>
+                <option value="" selected disabled>Choose Second preference</option>
+
+             <option value="AI/ML">AI/Machine learning</option>
+            <option value="UI/UX">UI/UX</option>
+            <option value="Web">Web Development</option>
+            <option value="Embedded">Embedded systems</option>
+            <option value="Arduino">Arduino</option>
+            <option value="MATLAB">MATLAB</option>
+            <option value="Solidworks">Solidworks</option>
+            <option value="Jet engine">Jet engine</option>
+            <option value="Automotive">Automotive</option>
+
+          </select>
+        </div>
+
+      </form>
+                    <button type="submit" form="form" id="submitBtn">
+                    <span class="btn-text">Submit</span>
+                    <span class="loader"></span>
+                    </button>
+
+    </div>
+    <script src="script.js"></script>
+  </body>
+</html>
