@@ -115,7 +115,6 @@ input, select{
 }
 select {
   appearance: none;
-  color: rgb(47, 47, 47);
     width: 100%;
   padding: 12px;
   border-radius: 10px;
@@ -127,6 +126,7 @@ select {
   font-size: 20px;
   transition: 0.3s;
 }
+
 
 /* Placeholder color */
 input::placeholder {
@@ -141,7 +141,17 @@ select:focus {
   border-color: #9b5cff;
   box-shadow: 0 0 8px rgba(155, 92, 255, 0.6);
 }
+select {
+  cursor: pointer;
+}
 
+select option:checked {
+  background-color: #6a11cb;
+}
+select option {
+  background-color: white !important;
+  color: black !important;
+}
 /* Gender options
 .option-box {
   display: flex;
