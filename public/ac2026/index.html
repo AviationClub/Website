@@ -83,15 +83,32 @@
         <!-- container for Department input field -->
         <div class="input-container">
           <label for="department">Department</label>
-          <select name="department" id="department" required >
-            <option value="" selected disabled>Choose Your Department</option>
-            <option value="electrical">Electrical</option>
-            <option value="mechanical">Mechanical</option>
-            <option value="architecture">Architecture</option>
-            <option value="civil">Civil</option>
-            <option value="none">None</option>
+          <select id="department" required>
+  <option value="" disabled selected hidden>Select your department</option>
 
-          </select>
+  <!-- ⚡ Electrical Group -->
+  <optgroup label="Electrical">
+    <option value="cs">Computer & Systems Engineering</option>
+        <option value="comm">Communications & Electronics</option>
+    <option value="power">Electrical Power</option>
+
+    <option value="general_electrical">General Electrical</option>
+
+  </optgroup>
+
+  <!-- ⚙️ Mechanical Group -->
+  <optgroup label="Mechanical">
+    <option value="mechatronics">Mechatronics & Robotics</option>
+    <option value="automotive">Automotive</option>
+    <option value="mechanical_power">Mechanical Power</option>
+    <option value="production">Production & Design</option>
+  </optgroup>
+
+  <!-- 🏗️ Standalone -->
+  <option value="civil">Civil</option>
+  <option value="architecture">Architecture</option>
+  <option value="none">None of the above</option>
+</select>
         </div>
 
 
