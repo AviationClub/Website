@@ -43,28 +43,32 @@ submitBtn.classList.add("loading");
 
   try {
     
-    const res = await fetch("/api/submitForm", {
+      const res = await fetch("/api/submitForm", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
-    
-       const result = await res.json();
 
-        if (!result.success) {
-        alert(result.message);
-        return;
-        }
+    let result;
 
-        // ✅ success
-      window.location.replace("/ac2026/success.html");
+    try {
+      result = await res.json();
+    } catch {
+      throw new Error("Server returned invalid response");
+    }
+
+    if (!res.ok || !result.success) {
+      throw new Error(result?.message || "Submission failed");
+    }
+
+    // ✅ success
+    window.location.replace("/ac2026/success.html");
     
   } catch (error) {
-    console.error('Submission failed:', error);
-          alert("Something went wrong ❌");
-
-   
-  } finally {
+  console.error('Submission failed:', error);
+  alert(error.message || "Something went wrong ❌");
+}
+ finally {
     submitBtn.disabled = false;
     submitBtn.classList.remove("loading");  
     submitBtn.textContent = originalText;
