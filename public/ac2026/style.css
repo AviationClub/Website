@@ -152,6 +152,10 @@ select option {
   background-color: white !important;
   color: black !important;
 }
+option[disabled] {
+  color: #aaa;
+  font-weight: bold;
+}
 /* Gender options
 .option-box {
   display: flex;
