@@ -151,4 +151,7 @@ else {
     },
   };
 }
+ finally {
+  await sql.close();  //FIXES AUTO-PAUSE
+}
 };
