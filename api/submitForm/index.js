@@ -71,28 +71,41 @@ if (
     };
 
     const pool = await sql.connect(config);
+    // Check for existing record
+    const request = pool.request();
 
-    // Check if phone number or email already exists
-    const check = await pool.request().query(`
-  SELECT id, phone_number, email 
+request.input("phone", sql.VarChar, cleanPhone);
+request.input("email", sql.VarChar, cleanEmail);
+
+const check = await request.query(`
+  SELECT id 
   FROM academy26 
-  WHERE phone_number = '${cleanPhone}' OR email = '${cleanEmail}'
+  WHERE phone_number = @phone OR email = @email
 `);
 
     const existing = check.recordset[0];
   
 
 if (existing) {
-  await pool.request().query(`
+  await pool.request()
+  .input("name", sql.VarChar, cleanName)
+  .input("phone", sql.VarChar, cleanPhone)
+  .input("email", sql.VarChar, cleanEmail)
+  .input("year", sql.VarChar, academicYear)
+  .input("dept", sql.VarChar, department)
+  .input("first", sql.VarChar, first_preference)
+  .input("second", sql.VarChar, second_preference)
+  .input("id", sql.Int, existing.id)
+  .query(`
     UPDATE academy26 SET 
-      full_name = '${cleanName}',
-      phone_number = '${cleanPhone}',
-      email = '${cleanEmail}',
-      academic_year = '${academicYear}',
-      department = '${department}',
-      first_preference = '${first_preference}',
-      second_preference = '${second_preference}'
-    WHERE id = ${existing.id}
+      full_name = @name,
+      phone_number = @phone,
+      email = @email,
+      academic_year = @year,
+      department = @dept,
+      first_preference = @first,
+      second_preference = @second
+    WHERE id = @id
   `);
 
   context.res = {
@@ -103,13 +116,21 @@ if (existing) {
 }
 
 else {
-  // ✅ INSERT
-  await pool.request().query(`
-  INSERT INTO academy26 
-  (full_name, phone_number, email, academic_year, department, first_preference, second_preference, registration_date)
-  VALUES 
-  ('${cleanName}', '${cleanPhone}', '${cleanEmail}', '${academicYear}', '${department}', '${first_preference}', '${second_preference}', GETDATE())
-`);
+  //  INSERT
+  await pool.request()
+  .input("name", sql.VarChar, cleanName)
+  .input("phone", sql.VarChar, cleanPhone)
+  .input("email", sql.VarChar, cleanEmail)
+  .input("year", sql.VarChar, academicYear)
+  .input("dept", sql.VarChar, department)
+  .input("first", sql.VarChar, first_preference)
+  .input("second", sql.VarChar, second_preference)
+  .query(`
+    INSERT INTO academy26 
+    (full_name, phone_number, email, academic_year, department, first_preference, second_preference, registration_date)
+    VALUES 
+    (@name, @phone, @email, @year, @dept, @first, @second, GETDATE())
+  `);
 
   context.res = {
     status: 200,
