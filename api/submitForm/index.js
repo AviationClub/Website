@@ -67,14 +67,18 @@ module.exports = async function (context, req) {
 
     // =========================
     // 🔍 CHECK EXISTING
+    // Fix: use .limit(1) instead of .maybeSingle()
+    // to avoid 406 error when OR matches multiple rows
     // =========================
-    const { data: existing, error: checkError } = await supabase
+    const { data: existingRows, error: checkError } = await supabase
       .from("academy26")
       .select("id")
       .or(`phone_number.eq.${cleanPhone},email.eq.${cleanEmail}`)
-      .maybeSingle();
+      .limit(1);
 
     if (checkError) throw checkError;
+
+    const existing = existingRows?.[0] ?? null;
 
     // =========================
     // ✏️ UPDATE
@@ -102,57 +106,63 @@ module.exports = async function (context, req) {
           message: "Your data has been updated successfully ✅",
         },
       };
+      return; // 👈 prevent fall-through
     }
 
     // =========================
     // ➕ INSERT
     // =========================
-    else {
-      const { error: insertError } = await supabase
-        .from("academy26")
-        .insert([
-          {
-            full_name: cleanName,
-            phone_number: cleanPhone,
-            email: cleanEmail,
-            academic_year: academicYear,
-            department,
-            first_preference,
-            second_preference,
-          },
-        ]);
-
-      if (insertError) throw insertError;
-
-      context.res = {
-        status: 200,
-        body: {
-          success: true,
-          message: "Registration successful 🎉",
+    const { error: insertError } = await supabase
+      .from("academy26")
+      .insert([
+        {
+          full_name: cleanName,
+          phone_number: cleanPhone,
+          email: cleanEmail,
+          academic_year: academicYear,
+          department,
+          first_preference,
+          second_preference,
         },
-      };
-    }
+      ]);
+
+    if (insertError) throw insertError;
+
+    context.res = {
+      status: 200,
+      body: {
+        success: true,
+        message: "Registration successful 🎉",
+      },
+    };
 
     // =========================
     // 📊 GOOGLE SHEETS (OPTIONAL)
+    // Fix: wrapped in try/catch so it never crashes the function
     // =========================
-    const googleFormUrl =
-      "https://docs.google.com/forms/d/e/1FAIpQLSfTVyP5p6T0JIssfHCm-FpEJ9Fs_JSvGbBUKHXVA9k_APTsyg/formResponse";
+    try {
+      const googleFormUrl =
+        "https://docs.google.com/forms/d/e/1FAIpQLSfTVyP5p6T0JIssfHCm-FpEJ9Fs_JSvGbBUKHXVA9k_APTsyg/formResponse";
 
-    const params = new URLSearchParams({
-      "entry.768381184": cleanName,
-      "entry.815813477": cleanPhone,
-      "entry.961742770": cleanEmail,
-      "entry.542029883": academicYear,
-      "entry.1919273035": department,
-      "entry.1004628121": first_preference,
-      "entry.1232000012": second_preference,
-    });
+      const params = new URLSearchParams({
+        "entry.768381184": cleanName,
+        "entry.815813477": cleanPhone,
+        "entry.961742770": cleanEmail,
+        "entry.542029883": academicYear,
+        "entry.1919273035": department,
+        "entry.1004628121": first_preference,
+        "entry.1232000012": second_preference,
+      });
 
-    fetch(`${googleFormUrl}?${params.toString()}`, {
-      method: "GET",
-      mode: "no-cors",
-    }).catch(() => {});
+      // Fix: globalThis.fetch is only available on Node 18+
+      // Falls back to node-fetch if needed
+      const fetchFn = globalThis.fetch ?? require("node-fetch");
+      fetchFn(`${googleFormUrl}?${params.toString()}`, {
+        method: "GET",
+      }).catch(() => {});
+    } catch (_) {
+      // Google Sheets is optional — never let it break the main response
+    }
 
   } catch (err) {
     console.error("❌ ERROR:", err);
