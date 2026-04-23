@@ -22,9 +22,7 @@ export async function POST(req: NextRequest) {
     const cleanEmail = email?.toLowerCase().trim();
     const cleanPhone = phoneNumber?.trim();
 
-    // =========================
-    // ✅ VALIDATION
-    // =========================
+    // Validation
     if (
       !cleanName ||
       !cleanPhone ||
@@ -61,9 +59,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // =========================
-    // 🔍 CHECK EXISTING
-    // =========================
+    // Check for existing entry by phone or email
     const { data: existingRows, error: checkError } = await supabase
       .from("academy26")
       .select("id")
@@ -74,9 +70,7 @@ export async function POST(req: NextRequest) {
 
     const existing = existingRows?.[0] ?? null;
 
-    // =========================
-    // ✏️ UPDATE
-    // =========================
+    //  Update if exists, otherwise Insert
     if (existing) {
       const { error: updateError } = await supabase
         .from("academy26")
@@ -93,7 +87,7 @@ export async function POST(req: NextRequest) {
 
       if (updateError) throw updateError;
 
-      // fire google sheets (optional, non-blocking)
+      // Fire google sheets (optional, non-blocking)
       fireGoogleSheet({ cleanName, cleanPhone, cleanEmail, academicYear, department, first_preference, second_preference });
 
       return NextResponse.json({
@@ -102,9 +96,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // =========================
-    // ➕ INSERT
-    // =========================
+    //  Insert new entry
     const { error: insertError } = await supabase
       .from("academy26")
       .insert([
@@ -138,9 +130,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// =========================
-// 📊 GOOGLE SHEETS (fire and forget)
-// =========================
+// GOOGLE SHEETS (fire and forget)
 function fireGoogleSheet({
   cleanName,
   cleanPhone,

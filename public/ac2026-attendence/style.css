@@ -39,7 +39,7 @@ h2 {
   text-align: center;
   margin-top: 20px;
   font-size: 25px;
-  color: rgba(255, 249, 249, 0.8);
+  color: #502077;
   font-family: "Segoe UI", sans-serif;
   background-color: rgba(122, 17, 154, 0.1);
     backdrop-filter: blur(12px);
@@ -48,6 +48,9 @@ h2 {
   border-radius: 12px;
   padding: 10px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+}
+#End {
+  color: #00ffb3;
 }
 /*  Inputs */
 input, select {

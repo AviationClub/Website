@@ -1,12 +1,12 @@
 // 🔴 FIREBASE CONFIG
 const firebaseConfig = {
-  apiKey: "AIzaSyCPRUW1A1GjnQflXlLQYLoJKehfcKN4Pug",
-  authDomain: "academy-attendance-7bdcc.firebaseapp.com",
-  projectId: "academy-attendance-7bdcc",
-  storageBucket: "academy-attendance-7bdcc.firebasestorage.app",
-  messagingSenderId: "756693665222",
-  appId: "1:756693665222:web:e42c4f52fb798b4de71ec7",
-  measurementId: "G-1SM04SCL9G"
+  apiKey: "",
+  authDomain: "",
+  projectId: "",
+  storageBucket: "",
+  messagingSenderId: "",
+  appId: "",
+  measurementId: ""
 };
 
 firebase.initializeApp(firebaseConfig);
