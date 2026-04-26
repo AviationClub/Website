@@ -21,6 +21,15 @@ let user = {};
 let allSlots = [];
 let selectedSlots = [];
 
+const submissionsOpen = false; // 👈 change this when needed
+
+const formSection = document.getElementById("formSection");
+const endMessage = document.getElementById("endMessage");
+
+if (!submissionsOpen) {
+  formSection.style.display = "none";
+  endMessage.style.display = "block";
+}
 // ELEMENTS
 const form = document.getElementById("form");
 const name = document.getElementById("name");

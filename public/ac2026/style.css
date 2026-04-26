@@ -84,6 +84,13 @@ input[type="radio"] {
 #departmentContainer {
   display: none;
 }
+#endMessage {
+  color: #00ffcc;
+  text-align: center;
+  font-size: 22px;
+  margin-top: 20px;
+
+}
 
 /* Space between options */
 .option-box {
@@ -313,6 +320,12 @@ body{
     }
 }
 @media (max-width: 640px) {
+  #endMessage {
+    max-width: 300px;
+    text-align: center;
+    margin: 20px auto;
+
+  }
 body{
     background: url("Imgs/Backgroundsmall.png") no-repeat center center/ cover ; 
 }

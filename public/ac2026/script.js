@@ -1,13 +1,27 @@
+const submitBtn = document.getElementById("submitBtn");
+const submissionsOpen = false; // 👈 change this when needed
+
+const formSection = document.getElementById("form");
+const endMessage = document.getElementById("endMessage");
+
+if (!submissionsOpen) {
+  formSection.style.display = "none";
+  endMessage.style.display = "block";
+  submitBtn.disabled = true;
+  submitBtn.style.display = "none";
+}
 // handle backend
 document.querySelector("form").addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  const submitBtn = document.getElementById("submitBtn");
 
   // 🚫 prevent double click spam
   
   if (submitBtn.disabled) return;
   const originalText = submitBtn.textContent;
+
+
+
 
   
 

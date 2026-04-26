@@ -16,43 +16,35 @@
 
 <div class="container">
 
-<h2>Attendance Registration</h2>
-<h2 id="End">The Event has Finished Thanks for Participating! </h2>
+  <h2>Attendance Registration</h2>
 
-<!-- <form id="form">
-  <input type="text" id="name" placeholder="Name" required>
-  <input type="email" id="email" placeholder="Email" required>
+  <!-- Closed Message -->
+  <h2 id="endMessage" style="display: none;">
+    The Event has Finished. Thanks for Participating! 🙌
+  </h2>
 
+  <!-- Form -->
+  <div id="formSection">
+    <form id="form">
+      <input type="text" id="name" placeholder="Name" required>
+      <input type="email" id="email" placeholder="Email" required>
 
-  <select id="committee" required>
-  <option value="" disabled selected>Select your committee</option>
+      <select id="committee" required>
+        <option value="" disabled selected>Select your committee</option>
+        <option value="IT">IT</option>
+        <option value="Academy">Academy</option>
+        <option value="HR">HR</option>
+        <option value="QM">QM</option>
+        <option value="Media">Media</option>
+        <option value="Advertising">Advertising</option>
+        <option value="PR">PR</option>
+        <option value="FR">FR</option>
+        <option value="High Board">High Board</option>
+      </select>
 
-  <option value="IT">IT</option>
-  <option value="Academy">Academy</option>
-  <option value="HR">HR</option>
-  <option value="QM">QM</option>
-  <option value="Media">Media</option>
-  <option value="Advertising">Advertising</option>
-  <option value="PR">PR</option>
-  <option value="FR">FR</option>
-  <option value="High Board">High Board</option>
-
-</select>
-  <button type="submit">Next</button>
-</form>
-
-<div id="calendar" class="hidden">
-  <h2 id="Selectword">Select Day & Time</h2>
-
-
-  <select id="dayFilter">
-    <option value="All">All Days</option>
-  </select>
-
-  <div id="slots"></div>
-  <button id="submitBooking">Submit Selection</button>
-
-</div> -->
+      <button type="submit">Next</button>
+    </form>
+  </div>
 
 </div>
   <p class="footer">Powered By : IT Team 👨🏻‍💻 </p>
