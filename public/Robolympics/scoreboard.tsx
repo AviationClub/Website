@@ -32,7 +32,6 @@ function shotControls(team: CompetitionTeam, running: boolean, saving: boolean, 
   const attempts = team.events.filter((entry) => entry.key === "shot");
   const hit = attempts.some((entry) => entry.points > 0);
   const attemptNumber = attempts.length + 1;
-  if (scoreFor(team.events, "detection") === 0) return <div className={styles.controlHint}>Record AI token detection first. It must be displayed before shooting.</div>;
   if (hit || attempts.length >= 3) return <div className={styles.controlHint}>{hit ? "Correct target hit. Shot scoring is complete." : "All three attempts recorded. Shot scoring is complete."}</div>;
   const points = [15, 10, 5][attemptNumber - 1];
   return <>
