@@ -24,23 +24,85 @@ export async function readCompetitionState(): Promise<{ state: CompetitionState;
   };
 }
 
-export async function saveCompetitionState(state: CompetitionState, expectedRevision: string): Promise<string | null> {
-  const expectedTime = Date.parse(expectedRevision);
-  if (!Number.isFinite(expectedTime)) throw new Error("Missing or invalid database revision. Reload the organizer page.");
-  const nextTimestamp = new Date(Math.max(Date.now(), expectedTime + 1)).toISOString();
-  const { data, error } = await getSupabaseAdmin()
-    .from("robolympics_state")
-    .update({ state, updated_at: nextTimestamp })
-    .eq("id", 1)
-    .eq("updated_at", expectedRevision)
-    .select("state, updated_at")
-    .maybeSingle();
-  if (error) throw error;
-  if (!data) return null;
-  if (stableJson(data.state) !== stableJson(state)) {
-    throw new Error("The saved Robolympics state did not match the requested update.");
+export async function saveCompetitionState(
+  baseState: CompetitionState,
+  requestedState: CompetitionState,
+  expectedRevision: string,
+): Promise<string | null> {
+  const supabase = getSupabaseAdmin();
+  let candidate = requestedState;
+  let revision = expectedRevision;
+
+  // Rebase changes made on another phone/tab instead of rejecting normal concurrent updates.
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const expectedTime = Date.parse(revision);
+    const nextTimestamp = new Date(Math.max(Date.now(), Number.isFinite(expectedTime) ? expectedTime + 1 : Date.now())).toISOString();
+    const { data, error } = await supabase
+      .from("robolympics_state")
+      .update({ state: candidate, updated_at: nextTimestamp })
+      .eq("id", 1)
+      .eq("updated_at", revision)
+      .select("state, updated_at")
+      .maybeSingle();
+    if (error) throw error;
+    if (data) {
+      if (stableJson(data.state) !== stableJson(candidate)) {
+        throw new Error("The saved Robolympics state did not match the requested update.");
+      }
+      return data.updated_at;
+    }
+
+    const latest = await readCompetitionState();
+    if (latest.revision === "missing") return null;
+    candidate = mergeCompetitionState(baseState, requestedState, latest.state);
+    revision = latest.revision;
   }
-  return data.updated_at;
+  return null;
+}
+
+function mergeCompetitionState(base: CompetitionState, requested: CompetitionState, latest: CompetitionState): CompetitionState {
+  const baseTeams = new Map(base.teams.map((team) => [team.id, team]));
+  const requestedTeams = new Map(requested.teams.map((team) => [team.id, team]));
+  const latestTeams = new Map(latest.teams.map((team) => [team.id, team]));
+
+  // Deletions in the user's change are applied only to teams in its base snapshot.
+  for (const id of baseTeams.keys()) {
+    if (!requestedTeams.has(id)) latestTeams.delete(id);
+  }
+
+  for (const [id, wanted] of requestedTeams) {
+    const before = baseTeams.get(id);
+    const current = latestTeams.get(id);
+    if (!before || !current) {
+      if (!current) latestTeams.set(id, wanted);
+      continue;
+    }
+
+    const wantedEventIds = new Set(wanted.events.map((entry) => entry.id));
+    const removedEventIds = new Set(before.events.filter((entry) => !wantedEventIds.has(entry.id)).map((entry) => entry.id));
+    const mergedEvents = new Map(current.events.filter((entry) => !removedEventIds.has(entry.id)).map((entry) => [entry.id, entry]));
+    const beforeEventIds = new Set(before.events.map((entry) => entry.id));
+    for (const entry of wanted.events) {
+      if (!beforeEventIds.has(entry.id)) mergedEvents.set(entry.id, entry);
+    }
+
+    latestTeams.set(id, {
+      ...current,
+      name: wanted.name !== before.name ? wanted.name : current.name,
+      events: [...mergedEvents.values()],
+      finished: wanted.finished !== before.finished ? wanted.finished : current.finished,
+    });
+  }
+
+  const teams = [...latestTeams.values()];
+  const activeTeamId = requested.activeTeamId !== base.activeTeamId ? requested.activeTeamId : latest.activeTeamId;
+  const activeExists = activeTeamId === null || teams.some((team) => team.id === activeTeamId);
+  return {
+    teams,
+    activeTeamId: activeExists ? activeTeamId : null,
+    startedAt: !activeExists ? null : requested.startedAt !== base.startedAt ? requested.startedAt : latest.startedAt,
+    stoppedAt: !activeExists ? null : requested.stoppedAt !== base.stoppedAt ? requested.stoppedAt : latest.stoppedAt,
+  };
 }
 
 function stableJson(value: unknown): string {

@@ -77,6 +77,7 @@ export default function Scoreboard({ mode }: { mode: "public" | "admin" }) {
       if (!result?.state || typeof result.revision !== "string") throw new Error("The score board response is incomplete. Reload the page.");
       setSnapshot({ state: result.state, revision: result.revision });
       setError("");
+      setSaveError("");
       setReady(true);
     } catch (e) {
       if (controller.signal.aborted) return;
@@ -135,7 +136,7 @@ export default function Scoreboard({ mode }: { mode: "public" | "admin" }) {
     try {
       const response = await fetch("/api/robolympics/state", {
         method: "PUT", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ state: next, expectedRevision }),
+        body: JSON.stringify({ baseState: state, state: next, expectedRevision }),
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Could not save this update.");

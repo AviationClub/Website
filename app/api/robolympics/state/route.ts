@@ -17,21 +17,24 @@ export async function GET() {
 export async function PUT(request: NextRequest) {
   if (!hasAdminSession()) return NextResponse.json({ error: "Organizer sign-in required." }, { status: 401 });
   try {
-    const body = await request.json() as { state?: CompetitionState; expectedRevision?: string };
+    const body = await request.json() as { baseState?: CompetitionState; state?: CompetitionState; expectedRevision?: string };
+    const baseState = body?.baseState;
     const state = body?.state;
-    if (!state || !Array.isArray(state.teams) || state.teams.length > 100
-      || typeof body.expectedRevision !== "string"
-      || !(state.activeTeamId === null || typeof state.activeTeamId === "string")
-      || !(state.startedAt === null || typeof state.startedAt === "string")
-      || !(state.stoppedAt === null || typeof state.stoppedAt === "string")
-      || state.teams.some((team) => !team || typeof team.id !== "string" || typeof team.name !== "string"
+    const validState = (value: CompetitionState | undefined) => Boolean(value && Array.isArray(value.teams) && value.teams.length <= 100
+      && (value.activeTeamId === null || typeof value.activeTeamId === "string")
+      && (value.startedAt === null || typeof value.startedAt === "string")
+      && (value.stoppedAt === null || typeof value.stoppedAt === "string")
+      && !value.teams.some((team) => !team || typeof team.id !== "string" || typeof team.name !== "string"
         || team.name.length > 100 || !Array.isArray(team.events) || team.events.length > 3000
-        || typeof team.finished !== "boolean")) {
+        || typeof team.finished !== "boolean"));
+    if (!validState(baseState) || !validState(state)
+      || typeof body.expectedRevision !== "string"
+    ) {
       return NextResponse.json({ error: "Invalid score board update." }, { status: 400 });
     }
-    const revision = await saveCompetitionState(state, body.expectedRevision);
+    const revision = await saveCompetitionState(baseState!, state!, body.expectedRevision);
     if (!revision) {
-      return NextResponse.json({ error: "This page has an older score board version. The latest database data has been kept; refresh the page before making another change." }, { status: 409 });
+      return NextResponse.json({ error: "Several organizer updates arrived together. The latest data was kept; wait for the board to refresh, then try again." }, { status: 409 });
     }
     return NextResponse.json({ saved: true, revision });
   } catch (error) {
