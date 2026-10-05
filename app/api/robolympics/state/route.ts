@@ -10,7 +10,11 @@ export async function GET() {
     return NextResponse.json(await readCompetitionState(), { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error("Could not load Robolympics state:", error);
-    return NextResponse.json({ error: "The score board is not connected to its database yet." }, { status: 503 });
+    const missingConfig = error instanceof Error && error.message === "Supabase server configuration is missing.";
+    const message = missingConfig
+      ? "Set SUPABASE_URL and SUPABASE_SECRET_KEY in this server environment."
+      : "Supabase rejected the scoreboard request. Check that the URL and secret key belong to the same project and that setup.sql was run there.";
+    return NextResponse.json({ error: message }, { status: 503 });
   }
 }
 

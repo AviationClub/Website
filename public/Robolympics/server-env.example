@@ -1,6 +1,8 @@
-# Configure these as server-side settings in Azure Static Web Apps.
+# Configure these as server-side environment variables in Vercel (Production).
 SUPABASE_URL=
-SUPABASE_SERVICE_ROLE_KEY=
+SUPABASE_SECRET_KEY=
+# Legacy fallback only; prefer SUPABASE_SECRET_KEY.
+# SUPABASE_SERVICE_ROLE_KEY=
 ROBO_ADMIN_EMAIL=
 ROBO_ADMIN_PASSWORD=
 ROBO_SESSION_SECRET=

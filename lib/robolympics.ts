@@ -5,9 +5,15 @@ export type { CompetitionState, CompetitionTeam, ScoreEvent, ScoreKey } from "..
 
 export function getSupabaseAdmin() {
   const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  // Prefer Supabase's current server-only secret key; retain the legacy key as a migration fallback.
+  const key = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) throw new Error("Supabase server configuration is missing.");
-  return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
+  // Next.js may cache server-side fetches. Scoreboard state must always come from the live row.
+  const uncachedFetch: typeof fetch = (input, init) => fetch(input, { ...init, cache: "no-store" });
+  return createClient(url, key, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: { fetch: uncachedFetch },
+  });
 }
 
 export async function readCompetitionState(): Promise<{ state: CompetitionState; revision: string }> {
