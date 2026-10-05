@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
-import { Activity, ArrowLeft, Check, CircleStop, Clock3, Flag, LogOut, Minus, Plus, Radio, RotateCcw, Shield, Trophy, Users } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { Activity, ArrowLeft, Check, CircleStop, Clock3, Flag, LogOut, Minus, Plus, Radio, RotateCcw, Shield, Trash2, Trophy, Users } from "lucide-react";
 import type { CompetitionState, CompetitionTeam, ScoreEvent, ScoreKey } from "./score-model";
 import { emptyCompetitionState, scoreFor, scoreLabels, totalFor } from "./score-model";
 
@@ -28,7 +28,7 @@ function event(key: ScoreKey, points: number, label = scoreLabels[key]): ScoreEv
   return { id: newId(), key, label, points, at: new Date().toISOString() };
 }
 
-function shotControls(team: CompetitionTeam, running: boolean, record: (key: ScoreKey, points: number, label?: string) => void) {
+function shotControls(team: CompetitionTeam, running: boolean, saving: boolean, record: (key: ScoreKey, points: number, label?: string) => void) {
   const attempts = team.events.filter((entry) => entry.key === "shot");
   const hit = attempts.some((entry) => entry.points > 0);
   const attemptNumber = attempts.length + 1;
@@ -36,8 +36,8 @@ function shotControls(team: CompetitionTeam, running: boolean, record: (key: Sco
   if (hit || attempts.length >= 3) return <div className={styles.controlHint}>{hit ? "Correct target hit. Shot scoring is complete." : "All three attempts recorded. Shot scoring is complete."}</div>;
   const points = [15, 10, 5][attemptNumber - 1];
   return <>
-    <button className={styles.actionButton} disabled={!running} onClick={() => record("shot", points, `Precision Shot · attempt ${attemptNumber} hit`)}><Check size={17} /><span><b>Hit · attempt {attemptNumber}</b><small>+{points} points</small></span></button>
-    <button className={styles.actionButton} disabled={!running} onClick={() => record("shot", 0, `Precision Shot · attempt ${attemptNumber} missed`)}><CircleStop size={17} /><span><b>Missed · attempt {attemptNumber}</b><small>0 points · next attempt available</small></span></button>
+    <button className={styles.actionButton} disabled={!running || saving} onClick={() => record("shot", points, `Precision Shot · attempt ${attemptNumber} hit`)}><Check size={17} /><span><b>Hit · attempt {attemptNumber}</b><small>+{points} points</small></span></button>
+    <button className={styles.actionButton} disabled={!running || saving} onClick={() => record("shot", 0, `Precision Shot · attempt ${attemptNumber} missed`)}><CircleStop size={17} /><span><b>Missed · attempt {attemptNumber}</b><small>0 points · next attempt available</small></span></button>
   </>;
 }
 
@@ -51,13 +51,19 @@ export default function Scoreboard({ mode }: { mode: "public" | "admin" }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [teamName, setTeamName] = useState("");
+  const [teamToDelete, setTeamToDelete] = useState<string | null>(null);
+  const [confirmReset, setConfirmReset] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [now, setNow] = useState(Date.now());
+  const savingRef = useRef(false);
 
   const loadState = useCallback(async () => {
+    if (savingRef.current) return;
     try {
       const response = await fetch("/api/robolympics/state", { cache: "no-store" });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Could not load the score board.");
+      if (savingRef.current) return;
       setState(result);
       setError("");
       setReady(true);
@@ -103,8 +109,10 @@ export default function Scoreboard({ mode }: { mode: "public" | "admin" }) {
   const recording = running && remaining > 0;
   const sortedTeams = [...state.teams].sort((a, b) => totalFor(b.events) - totalFor(a.events) || a.name.localeCompare(b.name));
 
-  async function persist(next: CompetitionState) {
-    setState(next);
+  async function persist(next: CompetitionState): Promise<boolean> {
+    if (savingRef.current) return false;
+    savingRef.current = true;
+    setSaving(true);
     setError("");
     try {
       const response = await fetch("/api/robolympics/state", {
@@ -112,8 +120,14 @@ export default function Scoreboard({ mode }: { mode: "public" | "admin" }) {
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Could not save this update.");
+      setState(next);
+      return true;
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not save this update.");
+      return false;
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
     }
   }
 
@@ -138,8 +152,20 @@ export default function Scoreboard({ mode }: { mode: "public" | "admin" }) {
     e.preventDefault();
     const name = teamName.trim();
     if (!name || state.teams.some((team) => team.name.toLowerCase() === name.toLowerCase())) return;
-    void persist({ ...state, teams: [...state.teams, { id: newId(), name, events: [], finished: false }] });
-    setTeamName("");
+    void persist({ ...state, teams: [...state.teams, { id: newId(), name, events: [], finished: false }] })
+      .then((saved) => { if (saved) setTeamName(""); });
+  }
+
+  async function deleteTeam(id: string) {
+    if (running) return;
+    const next = {
+      ...state,
+      teams: state.teams.filter((team) => team.id !== id),
+      activeTeamId: state.activeTeamId === id ? null : state.activeTeamId,
+      startedAt: state.activeTeamId === id ? null : state.startedAt,
+      stoppedAt: state.activeTeamId === id ? null : state.stoppedAt,
+    };
+    if (await persist(next)) setTeamToDelete(null);
   }
 
   function selectTeam(id: string) {
@@ -182,14 +208,16 @@ export default function Scoreboard({ mode }: { mode: "public" | "admin" }) {
     void persist({ ...state, teams: state.teams.map((team) => team.id === updated.id ? updated : team) });
   }
 
-  function resetCompetition() {
-    if (!window.confirm("Clear all team scores and run data? This cannot be undone.")) return;
-    void persist(emptyCompetitionState);
+  async function resetCompetition() {
+    if (await persist(emptyCompetitionState)) {
+      setConfirmReset(false);
+      setTeamToDelete(null);
+    }
   }
 
   const stageButtons = (team: CompetitionTeam) => mainStages.map((stage) => {
     const already = scoreFor(team.events, stage.key) > 0;
-    return <button key={stage.key} className={`${styles.actionButton} ${already ? styles.recorded : ""}`} disabled={!recording || already} onClick={() => record(stage.key, stage.points)}>
+    return <button key={stage.key} className={`${styles.actionButton} ${already ? styles.recorded : ""}`} disabled={!recording || already || saving} onClick={() => record(stage.key, stage.points)}>
       {already ? <Check size={17} /> : <Plus size={17} />}<span><b>{stage.short}</b><small>{already ? "Recorded" : `+${stage.points} points`}</small></span>
     </button>;
   });
@@ -228,20 +256,21 @@ export default function Scoreboard({ mode }: { mode: "public" | "admin" }) {
         <div className={styles.currentScore}><small>CURRENT SCORE</small><b>{totalFor(activeTeam.events)}<i> pts</i></b></div>
       </div> : <div className={styles.noPlayer}><Radio size={19} />No team selected yet</div>}
       {isAdmin && <section className={styles.organizerPanel}>
-        <div className={styles.panelTitle}><div><p className={styles.eyebrow}>ORGANIZER CONTROLS</p><h3>Run control</h3></div><span className={styles.quickHint}>Tap once to log each result</span></div>
-        {!running && <div className={styles.teamSetup}><form onSubmit={addTeam} className={styles.addTeamForm}><input aria-label="Team name" placeholder="Add a team before competition" value={teamName} onChange={(e) => setTeamName(e.target.value)} /><button disabled={!teamName.trim()}><Plus size={16} /> Add team</button></form>
-          {!!state.teams.length && <div className={styles.teamPicker}><span>SELECT NEXT TEAM</span>{state.teams.map((team) => <button key={team.id} onClick={() => selectTeam(team.id)} className={`${styles.teamChip} ${activeTeam?.id === team.id ? styles.selectedChip : ""}`} disabled={team.finished}>{team.name}{team.finished && <Check size={14} />}</button>)}</div>}
-          {activeTeam && !activeTeam.finished && <button className={styles.startButton} onClick={startRun}><Radio size={17} /> Start {activeTeam.name}&apos;s run <span>10:00</span></button>}
+        <div className={styles.panelTitle}><div><p className={styles.eyebrow}>ORGANIZER CONTROLS</p><h3>Run control</h3></div><span className={styles.quickHint} aria-live="polite">{saving ? "Saving changes…" : "Tap once to log each result"}</span></div>
+        {!running && <div className={styles.teamSetup}><form onSubmit={addTeam} className={styles.addTeamForm}><input aria-label="Team name" placeholder="Add a team before competition" value={teamName} onChange={(e) => setTeamName(e.target.value)} disabled={saving} /><button disabled={!teamName.trim() || saving}><Plus size={16} /> Add team</button></form>
+          {!!state.teams.length && <div className={styles.teamPicker}><span>SELECT NEXT TEAM</span>{state.teams.map((team) => <div key={team.id} className={styles.teamItem}><button onClick={() => selectTeam(team.id)} className={`${styles.teamChip} ${activeTeam?.id === team.id ? styles.selectedChip : ""}`} disabled={team.finished || saving}>{team.name}{team.finished && <Check size={14} />}</button><button className={styles.deleteTeamButton} onClick={() => setTeamToDelete(team.id)} disabled={saving} aria-label={`Delete ${team.name}`} title={`Delete ${team.name}`}><Trash2 size={14} /></button></div>)}</div>}
+          {teamToDelete && <div className={styles.confirmRow} role="alertdialog" aria-label="Confirm team deletion"><span>Delete <b>{state.teams.find((team) => team.id === teamToDelete)?.name}</b> and its scores?</span><button className={styles.undoButton} disabled={saving} onClick={() => setTeamToDelete(null)}>Cancel</button><button className={styles.dangerButton} disabled={saving} onClick={() => void deleteTeam(teamToDelete)}>{saving ? "Saving…" : "Delete team"}</button></div>}
+          {activeTeam && !activeTeam.finished && <button className={styles.startButton} onClick={startRun} disabled={saving}><Radio size={17} /> Start {activeTeam.name}&apos;s run <span>10:00</span></button>}
           {activeTeam?.finished && <p className={styles.muted}>This team&apos;s run is recorded. Select the next team above.</p>}
         </div>}
         {running && activeTeam && <>
           <div className={styles.controlsGrid}><div className={styles.controlGroup}><div className={styles.controlHeading}><span>01</span><b>Stage completion</b></div><div className={styles.actionGrid}>{stageButtons(activeTeam)}</div></div>
-            <div className={styles.controlGroup}><div className={styles.controlHeading}><span>02</span><b>Authentication override</b></div><div className={styles.actionGrid}>{shotControls(activeTeam, recording, record)}</div></div>
-            <div className={styles.controlGroup}><div className={styles.controlHeading}><span>03</span><b>Bonuses & penalties</b></div><div className={styles.actionGrid}>{["Torque Ramp", "Suspension Stairs", "Rubble Area", "Authentication Override"].map((zone) => { const already = activeTeam.events.some((entry) => entry.label === `Autonomous navigation · ${zone}`); return <button key={zone} className={`${styles.actionButton} ${already ? styles.recorded : ""}`} disabled={!recording || already} onClick={() => record("autonomy", 10, `Autonomous navigation · ${zone}`)}><Activity size={17} /><span><b>Autonomous zone</b><small>{already ? "Recorded · +10 points" : `+10 · ${zone}`}</small></span></button>; })}<button className={`${styles.actionButton} ${styles.penaltyButton}`} disabled={!recording} onClick={() => record("penalty", -3, "Topple · referee recovery · −3") }><Minus size={17} /><span><b>Topple / referee reset</b><small>−3 points</small></span></button><button className={`${styles.actionButton} ${styles.penaltyButton}`} disabled={!recording} onClick={() => record("penalty", -3, "Hand-touch · −3")}><Minus size={17} /><span><b>Hand-touch</b><small>−3 points</small></span></button></div></div>
+          <div className={styles.controlGroup}><div className={styles.controlHeading}><span>02</span><b>Authentication override</b></div><div className={styles.actionGrid}>{shotControls(activeTeam, recording, saving, record)}</div></div>
+            <div className={styles.controlGroup}><div className={styles.controlHeading}><span>03</span><b>Bonuses & penalties</b></div><div className={styles.actionGrid}>{["Torque Ramp", "Suspension Stairs", "Rubble Area", "Authentication Override"].map((zone) => { const already = activeTeam.events.some((entry) => entry.label === `Autonomous navigation · ${zone}`); return <button key={zone} className={`${styles.actionButton} ${already ? styles.recorded : ""}`} disabled={!recording || already || saving} onClick={() => record("autonomy", 10, `Autonomous navigation · ${zone}`)}><Activity size={17} /><span><b>Autonomous zone</b><small>{already ? "Recorded · +10 points" : `+10 · ${zone}`}</small></span></button>; })}<button className={`${styles.actionButton} ${styles.penaltyButton}`} disabled={!recording || saving} onClick={() => record("penalty", -3, "Topple · referee recovery · −3") }><Minus size={17} /><span><b>Topple / referee reset</b><small>−3 points</small></span></button><button className={`${styles.actionButton} ${styles.penaltyButton}`} disabled={!recording || saving} onClick={() => record("penalty", -3, "Hand-touch · −3")}><Minus size={17} /><span><b>Hand-touch</b><small>−3 points</small></span></button></div></div>
           </div>
-          <div className={styles.runFooter}><button className={styles.undoButton} onClick={undoLast} disabled={!activeTeam.events.length}><RotateCcw size={16} /> Undo last entry</button><div><span>Tap the result as it happens. Current total <b>{totalFor(activeTeam.events)} pts</b></span><button className={styles.finishButton} onClick={finishRun}><CircleStop size={16} /> End run</button></div></div>
+          <div className={styles.runFooter}><button className={styles.undoButton} onClick={undoLast} disabled={!activeTeam.events.length || saving}><RotateCcw size={16} /> Undo last entry</button><div><span>Tap the result as it happens. Current total <b>{totalFor(activeTeam.events)} pts</b></span><button className={styles.finishButton} onClick={finishRun} disabled={saving}><CircleStop size={16} /> {saving ? "Saving…" : "End run"}</button></div></div>
         </>}
-        {!running && state.teams.length > 0 && <div className={styles.resetArea}><button onClick={resetCompetition}>Reset all competition data</button></div>}
+        {!running && state.teams.length > 0 && <div className={styles.resetArea}>{confirmReset ? <div className={styles.confirmRow} role="alertdialog" aria-label="Confirm competition reset"><span>Delete every team, score and run record?</span><button className={styles.undoButton} disabled={saving} onClick={() => setConfirmReset(false)}>Cancel</button><button className={styles.dangerButton} disabled={saving} onClick={() => void resetCompetition()}>{saving ? "Resetting…" : "Confirm reset"}</button></div> : <button onClick={() => setConfirmReset(true)} disabled={saving}>Reset all teams and scores</button>}</div>}
       </section>}
     </section>
     <section className={styles.standings}>

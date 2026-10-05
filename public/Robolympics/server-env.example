@@ -1,0 +1,6 @@
+# Configure these as server-side settings in Azure Static Web Apps.
+SUPABASE_URL=
+SUPABASE_SERVICE_ROLE_KEY=
+ROBO_ADMIN_EMAIL=
+ROBO_ADMIN_PASSWORD=
+ROBO_SESSION_SECRET=

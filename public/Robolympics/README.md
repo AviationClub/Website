@@ -7,6 +7,7 @@ This folder holds the competition-specific static assets and setup materials for
 - `score-model.ts` — shared Track I score categories and calculations
 - `aviation-club-logo.png` — Aviation Club logo used by the dashboard
 - `setup.sql` — create the Supabase state table and its initial row
+- `server-env.example` — names of the server environment settings (values belong in the host's secret settings)
 
 The tiny Next.js route entries remain in `app/robolympics/`. Organizer authentication and the database API remain server-side in `app/api/robolympics/` and `lib/`; files in this public folder are delivered to browsers and must not contain secrets.
 
