@@ -62,6 +62,9 @@ export default function Scoreboard({ mode }: { mode: "public" | "admin" }) {
   const [now, setNow] = useState(Date.now());
   const savingRef = useRef(false);
   const loadControllerRef = useRef<AbortController | null>(null);
+  const activityEventsRef = useRef<{ teamId: string; eventIds: Set<string> } | null>(null);
+  const [activityToast, setActivityToast] = useState<ScoreEvent | null>(null);
+  const [activityToastVisible, setActivityToastVisible] = useState(false);
 
   const loadState = useCallback(async () => {
     if (savingRef.current) return;
@@ -115,6 +118,38 @@ export default function Scoreboard({ mode }: { mode: "public" | "admin" }) {
     const timer = window.setInterval(() => setNow(Date.now()), 250);
     return () => window.clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    if (!ready) return;
+    const team = state.teams.find((candidate) => candidate.id === state.activeTeamId);
+    if (!team) {
+      activityEventsRef.current = null;
+      setActivityToast(null);
+      return;
+    }
+
+    const eventIds = new Set(team.events.map((entry) => entry.id));
+    const previous = activityEventsRef.current;
+    if (!previous || previous.teamId !== team.id) {
+      activityEventsRef.current = { teamId: team.id, eventIds };
+      return;
+    }
+
+    const added = team.events.filter((entry) => !previous.eventIds.has(entry.id));
+    activityEventsRef.current = { teamId: team.id, eventIds };
+    if (added.length) setActivityToast(added[added.length - 1]);
+  }, [ready, state.activeTeamId, state.teams]);
+
+  useEffect(() => {
+    if (!activityToast) return;
+    setActivityToastVisible(true);
+    const hideTimer = window.setTimeout(() => setActivityToastVisible(false), 11_500);
+    const clearTimer = window.setTimeout(() => setActivityToast(null), 12_000);
+    return () => {
+      window.clearTimeout(hideTimer);
+      window.clearTimeout(clearTimer);
+    };
+  }, [activityToast]);
 
   const activeTeam = state.teams.find((team) => team.id === state.activeTeamId) ?? null;
   const running = Boolean(state.startedAt && !state.stoppedAt && activeTeam);
@@ -275,6 +310,7 @@ export default function Scoreboard({ mode }: { mode: "public" | "admin" }) {
         <div className={styles.playerIdentity}><div className={styles.teamToken}><Flag size={21} /></div><div><small>ACTIVE TEAM</small><h3>{activeTeam.name}</h3><p>{running ? "Track I run in progress" : activeTeam.finished ? "Run complete · final score recorded" : "Waiting for the run to start"}</p></div></div>
         <div className={`${styles.timer} ${remaining <= 60 && running ? styles.timerWarning : ""}`}><Clock3 size={18} /><span>{formatTime(running ? remaining : activeTeam.finished && state.stoppedAt && state.startedAt ? Math.max(0, MAX_RUN_SECONDS - (new Date(state.stoppedAt).getTime() - new Date(state.startedAt).getTime()) / 1000) : MAX_RUN_SECONDS)}</span><small>{running && remaining === 0 ? "TIME UP" : "TIME REMAINING"}</small></div>
         <div className={styles.currentScore}><small>CURRENT SCORE</small><b>{totalFor(activeTeam.events)}<i> pts</i></b></div>
+        {activityToast && <div key={activityToast.id} className={`${styles.actionToast} ${activityToast.points < 0 ? styles.actionToastPenalty : ""} ${activityToastVisible ? styles.actionToastVisible : ""}`} role="status" aria-live="polite"><Activity size={17} /><span className={styles.actionToastLabel}><small>LIVE RESULT</small>{activityToast.label}</span><b className={activityToast.points < 0 ? styles.actionPenalty : styles.actionPoints}>{activityToast.points > 0 ? "+" : ""}{activityToast.points} pts</b></div>}
       </div> : <div className={styles.noPlayer}><Radio size={19} />No team selected yet</div>}
       {isAdmin && <section className={styles.organizerPanel}>
         <div className={styles.panelTitle}><div><p className={styles.eyebrow}>ORGANIZER CONTROLS</p><h3>Run control</h3></div><span className={styles.quickHint} aria-live="polite">{saving ? "Saving changes…" : "Tap once to log each result"}</span></div>
