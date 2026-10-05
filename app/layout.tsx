@@ -3,10 +3,8 @@ import localFont from "next/font/local";
 import { twMerge } from "tailwind-merge";
 import { ReactLenis } from "@/libs/react-lenis";
 import "./globals.css";
-import LoadingManager from "@/components/loading-manager";
 import type { Viewport } from "next";
-import Footer from "@/components/footer";
-import Header from "@/components/header";
+import SiteChrome from "@/components/site-chrome";
 
 const aalto = localFont({
   src: "../assets/fonts/Aalto-Display-Personal-use.woff2",
@@ -79,13 +77,7 @@ export default function RootLayout({
         {/* Noise */}
         <body className={twMerge(aalto.variable, apoc.variable)}>
           <div className="layout__wrapper overflow-hidden">
-            <div className="pointer-events-none fixed inset-0 z-[999999999999] h-[200%] w-[200%] animate-noise bg-noise opacity-[2]"></div>
-            <div className="noise pointer-events-none fixed inset-0 z-[999999999999]"></div>
-            <LoadingManager>
-              <Header />
-              {children}
-              <Footer />
-            </LoadingManager>
+            <SiteChrome>{children}</SiteChrome>
           </div>
         </body>
       </html>
