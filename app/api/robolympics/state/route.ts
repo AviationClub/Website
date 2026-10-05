@@ -17,8 +17,10 @@ export async function GET() {
 export async function PUT(request: NextRequest) {
   if (!hasAdminSession()) return NextResponse.json({ error: "Organizer sign-in required." }, { status: 401 });
   try {
-    const state = await request.json() as CompetitionState;
+    const body = await request.json() as { state?: CompetitionState; expectedRevision?: string };
+    const state = body?.state;
     if (!state || !Array.isArray(state.teams) || state.teams.length > 100
+      || typeof body.expectedRevision !== "string"
       || !(state.activeTeamId === null || typeof state.activeTeamId === "string")
       || !(state.startedAt === null || typeof state.startedAt === "string")
       || !(state.stoppedAt === null || typeof state.stoppedAt === "string")
@@ -27,10 +29,14 @@ export async function PUT(request: NextRequest) {
         || typeof team.finished !== "boolean")) {
       return NextResponse.json({ error: "Invalid score board update." }, { status: 400 });
     }
-    await saveCompetitionState(state);
-    return NextResponse.json({ saved: true });
+    const revision = await saveCompetitionState(state, body.expectedRevision);
+    if (!revision) {
+      return NextResponse.json({ error: "This page has an older score board version. The latest database data has been kept; refresh the page before making another change." }, { status: 409 });
+    }
+    return NextResponse.json({ saved: true, revision });
   } catch (error) {
     console.error("Could not save Robolympics state:", error);
-    return NextResponse.json({ error: "Could not save the score board. Check the database setup." }, { status: 503 });
+    const message = error instanceof Error ? error.message : "Could not save the score board.";
+    return NextResponse.json({ error: `Save failed: ${message}` }, { status: 503 });
   }
 }

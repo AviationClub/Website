@@ -43,9 +43,15 @@ function shotControls(team: CompetitionTeam, running: boolean, saving: boolean, 
 
 export default function Scoreboard({ mode }: { mode: "public" | "admin" }) {
   const isAdmin = mode === "admin";
-  const [state, setState] = useState<CompetitionState>(emptyCompetitionState);
+  const [snapshot, setSnapshot] = useState<{ state: CompetitionState; revision: string }>({
+    state: emptyCompetitionState,
+    revision: "",
+  });
+  const state = snapshot.state;
+  const revision = snapshot.revision;
   const [ready, setReady] = useState(false);
   const [error, setError] = useState("");
+  const [saveError, setSaveError] = useState("");
   const [authenticated, setAuthenticated] = useState(false);
   const [authChecked, setAuthChecked] = useState(!isAdmin);
   const [email, setEmail] = useState("");
@@ -68,7 +74,8 @@ export default function Scoreboard({ mode }: { mode: "public" | "admin" }) {
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Could not load the score board.");
       if (controller.signal.aborted || savingRef.current) return;
-      setState(result);
+      if (!result?.state || typeof result.revision !== "string") throw new Error("The score board response is incomplete. Reload the page.");
+      setSnapshot({ state: result.state, revision: result.revision });
       setError("");
       setReady(true);
     } catch (e) {
@@ -118,7 +125,7 @@ export default function Scoreboard({ mode }: { mode: "public" | "admin" }) {
   const recording = running && remaining > 0;
   const sortedTeams = [...state.teams].sort((a, b) => totalFor(b.events) - totalFor(a.events) || a.name.localeCompare(b.name));
 
-  async function persist(next: CompetitionState): Promise<boolean> {
+  async function persist(next: CompetitionState, expectedRevision: string): Promise<boolean> {
     if (savingRef.current) return false;
     loadControllerRef.current?.abort();
     loadControllerRef.current = null;
@@ -127,14 +134,17 @@ export default function Scoreboard({ mode }: { mode: "public" | "admin" }) {
     setError("");
     try {
       const response = await fetch("/api/robolympics/state", {
-        method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(next),
+        method: "PUT", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ state: next, expectedRevision }),
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Could not save this update.");
-      setState(next);
+      if (typeof result.revision !== "string") throw new Error("The database did not confirm the saved version. Reload before continuing.");
+      setSnapshot({ state: next, revision: result.revision });
+      setSaveError("");
       return true;
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not save this update.");
+      setSaveError(e instanceof Error ? e.message : "Could not save this update.");
       return false;
     } finally {
       savingRef.current = false;
@@ -163,7 +173,7 @@ export default function Scoreboard({ mode }: { mode: "public" | "admin" }) {
     e.preventDefault();
     const name = teamName.trim();
     if (!name || state.teams.some((team) => team.name.toLowerCase() === name.toLowerCase())) return;
-    void persist({ ...state, teams: [...state.teams, { id: newId(), name, events: [], finished: false }] })
+    void persist({ ...state, teams: [...state.teams, { id: newId(), name, events: [], finished: false }] }, revision)
       .then((saved) => { if (saved) setTeamName(""); });
   }
 
@@ -176,23 +186,23 @@ export default function Scoreboard({ mode }: { mode: "public" | "admin" }) {
       startedAt: state.activeTeamId === id ? null : state.startedAt,
       stoppedAt: state.activeTeamId === id ? null : state.stoppedAt,
     };
-    if (await persist(next)) setTeamToDelete(null);
+    if (await persist(next, revision)) setTeamToDelete(null);
   }
 
   function selectTeam(id: string) {
     if (running) return;
-    void persist({ ...state, activeTeamId: id, startedAt: null, stoppedAt: null });
+    void persist({ ...state, activeTeamId: id, startedAt: null, stoppedAt: null }, revision);
   }
 
   function startRun() {
     if (!activeTeam || activeTeam.finished) return;
-    void persist({ ...state, startedAt: new Date().toISOString(), stoppedAt: null });
+    void persist({ ...state, startedAt: new Date().toISOString(), stoppedAt: null }, revision);
   }
 
   function record(key: ScoreKey, points: number, label?: string) {
     if (!activeTeam || !running) return;
     const updated = { ...activeTeam, events: [...activeTeam.events, event(key, points, label)] };
-    void persist({ ...state, teams: state.teams.map((team) => team.id === updated.id ? updated : team) });
+    void persist({ ...state, teams: state.teams.map((team) => team.id === updated.id ? updated : team) }, revision);
   }
 
   function finishRun() {
@@ -205,7 +215,7 @@ export default function Scoreboard({ mode }: { mode: "public" | "admin" }) {
     const speedPoints = Math.floor(Math.max(0, MAX_RUN_SECONDS - elapsed) / 30) * 2;
     if (speedPoints > 0) events.push(event("speed", speedPoints, `Speed Escape · +${speedPoints} points`));
     const updated = { ...activeTeam, events, finished: true };
-    void persist({ ...state, teams: state.teams.map((team) => team.id === updated.id ? updated : team), stoppedAt: completedAt.toISOString() });
+    void persist({ ...state, teams: state.teams.map((team) => team.id === updated.id ? updated : team), stoppedAt: completedAt.toISOString() }, revision);
   }
 
   useEffect(() => {
@@ -216,11 +226,11 @@ export default function Scoreboard({ mode }: { mode: "public" | "admin" }) {
     if (!activeTeam || !running || !activeTeam.events.length) return;
     const events = activeTeam.events.slice(0, -1);
     const updated = { ...activeTeam, events };
-    void persist({ ...state, teams: state.teams.map((team) => team.id === updated.id ? updated : team) });
+    void persist({ ...state, teams: state.teams.map((team) => team.id === updated.id ? updated : team) }, revision);
   }
 
   async function resetCompetition() {
-    if (await persist(emptyCompetitionState)) {
+    if (await persist(emptyCompetitionState, revision)) {
       setConfirmReset(false);
       setTeamToDelete(null);
     }
@@ -256,7 +266,7 @@ export default function Scoreboard({ mode }: { mode: "public" | "admin" }) {
       <div><p className={styles.eyebrow}><span className={styles.liveDot} /> ROBOLYMPICS 2026 · TRACK I</p><h1>The Vault <em>Escape</em></h1><p className={styles.heroCopy}>A live view of every run, all the way to the exit.</p></div>
       <div className={styles.heroMeta}><span>100</span><small>BASE POINTS</small><i /> <span>10:00</span><small>RUN LIMIT</small></div>
     </section>
-    {error && <div className={styles.errorBanner}>{error}</div>}
+    {(saveError || error) && <div className={styles.errorBanner}>{saveError || error}</div>}
     {!ready && <div className={styles.loading}>Connecting to the live score board…</div>}
     {ready && !error && !state.teams.length && <div className={styles.emptyNotice}><Users size={22} /><div><b>Teams are being set up</b><p>The live standings will appear once the organizer adds the team list.</p></div></div>}
     <section className={styles.nowPlaying}>
