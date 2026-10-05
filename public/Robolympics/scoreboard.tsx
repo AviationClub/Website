@@ -56,22 +56,31 @@ export default function Scoreboard({ mode }: { mode: "public" | "admin" }) {
   const [saving, setSaving] = useState(false);
   const [now, setNow] = useState(Date.now());
   const savingRef = useRef(false);
+  const loadControllerRef = useRef<AbortController | null>(null);
 
   const loadState = useCallback(async () => {
     if (savingRef.current) return;
+    loadControllerRef.current?.abort();
+    const controller = new AbortController();
+    loadControllerRef.current = controller;
     try {
-      const response = await fetch("/api/robolympics/state", { cache: "no-store" });
+      const response = await fetch("/api/robolympics/state", { cache: "no-store", signal: controller.signal });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Could not load the score board.");
-      if (savingRef.current) return;
+      if (controller.signal.aborted || savingRef.current) return;
       setState(result);
       setError("");
       setReady(true);
     } catch (e) {
+      if (controller.signal.aborted) return;
       setError(e instanceof Error ? e.message : "Could not connect to the score board.");
       setReady(true);
+    } finally {
+      if (loadControllerRef.current === controller) loadControllerRef.current = null;
     }
   }, []);
+
+  useEffect(() => () => loadControllerRef.current?.abort(), []);
 
   useEffect(() => {
     if (isAdmin) {
@@ -111,6 +120,8 @@ export default function Scoreboard({ mode }: { mode: "public" | "admin" }) {
 
   async function persist(next: CompetitionState): Promise<boolean> {
     if (savingRef.current) return false;
+    loadControllerRef.current?.abort();
+    loadControllerRef.current = null;
     savingRef.current = true;
     setSaving(true);
     setError("");
