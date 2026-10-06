@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import { Activity, ArrowLeft, Check, CircleStop, Clock3, Flag, LogOut, Minus, Plus, Radio, RotateCcw, Shield, Trash2, Trophy, Users } from "lucide-react";
+import { Activity, ArrowLeft, Check, CircleStop, Clock3, Flag, LogOut, Minus, Pencil, Plus, Radio, RotateCcw, Shield, Trash2, Trophy, Users } from "lucide-react";
 import type { CompetitionState, CompetitionTeam, ScoreEvent, ScoreKey } from "./score-model";
 import { emptyCompetitionState, scoreFor, scoreLabels, totalFor } from "./score-model";
 
@@ -18,6 +18,7 @@ const mainStages: { key: ScoreKey; points: number; short: string }[] = [
   { key: "detection", points: 10, short: "Token Detection" },
   { key: "escape", points: 10, short: "Escape Facility" },
 ];
+const mainStageNumbers = ["1", "2", "3.a", "3.b", "4.a", "5"];
 
 function newId() { return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`; }
 function formatTime(seconds: number) {
@@ -40,6 +41,78 @@ function shotControls(team: CompetitionTeam, running: boolean, saving: boolean, 
   </>;
 }
 
+function PastScoresEditor({ team, saving, onAdd, onRemove, onRemoveType, onDone }: {
+  team: CompetitionTeam;
+  saving: boolean;
+  onAdd: (key: ScoreKey, points: number, label: string) => void;
+  onRemove: (eventId: string) => void;
+  onRemoveType: (key: ScoreKey) => void;
+  onDone: () => void;
+}) {
+  const shotEvents = team.events.filter((entry) => entry.key === "shot");
+  const usedAttempts = new Set(shotEvents.map((entry) => Number(entry.label.match(/attempt (\d+)/)?.[1])).filter(Number.isFinite));
+  const nextAttempt = [1, 2, 3].find((attempt) => !usedAttempts.has(attempt));
+  const speedEvents = team.events.filter((entry) => entry.key === "speed");
+  const speedTotal = speedEvents.reduce((sum, entry) => sum + entry.points, 0);
+  const autonomyZones = ["Torque Ramp", "Suspension Stairs", "Rubble Area", "Authentication Override"];
+  const penalties = team.events.filter((entry) => entry.key === "penalty");
+
+  return <section className={styles.scoreEditPanel}>
+    <div className={styles.scoreEditHeading}>
+      <div><small>EDIT COMPLETED RUN</small><b>{team.name}</b><span>Current total <strong>{totalFor(team.events)} pts</strong></span></div>
+      <button className={styles.undoButton} onClick={onDone} disabled={saving}>Done</button>
+    </div>
+
+    <div className={styles.scoreEditGroup}>
+      <div className={styles.scoreEditGroupHeading}><b>Stage results</b><small>Restore a missed result or remove a recorded one.</small></div>
+      <div className={styles.scoreEditGrid}>
+        {mainStages.map((stage, index) => {
+          const entries = team.events.filter((entry) => entry.key === stage.key);
+          const points = entries.reduce((sum, entry) => sum + entry.points, 0);
+          return <article className={styles.scoreEditCard} key={stage.key}>
+            <small>STAGE {mainStageNumbers[index]}</small>
+            <b>{stage.short}</b>
+            <span>{entries.length ? `${points >= 0 ? "+" : ""}${points} pts recorded` : `${stage.points} pts available`}</span>
+            {entries.length
+              ? <button className={styles.scoreRemoveButton} onClick={() => onRemoveType(stage.key)} disabled={saving}><Minus size={14} /> Remove stage points</button>
+              : <button className={styles.scoreAwardButton} onClick={() => onAdd(stage.key, stage.points, scoreLabels[stage.key])} disabled={saving}><Plus size={14} /> Add +{stage.points} points</button>}
+          </article>;
+        })}
+        {(() => {
+          const entries = team.events.filter((entry) => entry.key === "clean");
+          return <article className={styles.scoreEditCard}>
+            <small>STAGE 6</small><b>Clean Run</b>
+            <span>{entries.length ? `${entries.reduce((sum, entry) => sum + entry.points, 0)} pts recorded` : "15 pts available"}</span>
+            {entries.length
+              ? <button className={styles.scoreRemoveButton} onClick={() => onRemoveType("clean")} disabled={saving}><Minus size={14} /> Remove clean points</button>
+              : <button className={styles.scoreAwardButton} onClick={() => onAdd("clean", 15, "Clean Run · +15 points")} disabled={saving}><Plus size={14} /> Add +15 points</button>}
+          </article>;
+        })()}
+      </div>
+    </div>
+
+    <div className={styles.scoreEditGroup}>
+      <div className={styles.scoreEditGroupHeading}><b>Precision shots</b><small>Record or remove individual attempts.</small></div>
+      {shotEvents.map((entry) => <div className={styles.scoreEditEvent} key={entry.id}><span>{entry.label}</span><b>{entry.points >= 0 ? "+" : ""}{entry.points} pts</b><button className={styles.scoreRemoveButton} onClick={() => onRemove(entry.id)} disabled={saving} aria-label={`Remove ${entry.label}`}><Trash2 size={14} /> Remove</button></div>)}
+      {nextAttempt ? <div className={styles.scoreEditChoices}><span>Add attempt {nextAttempt}</span><button className={styles.scoreAwardButton} onClick={() => onAdd("shot", [15, 10, 5][nextAttempt - 1], `Precision Shot · attempt ${nextAttempt} hit`)} disabled={saving}><Plus size={14} /> Hit · +{[15, 10, 5][nextAttempt - 1]}</button><button className={styles.scoreNeutralButton} onClick={() => onAdd("shot", 0, `Precision Shot · attempt ${nextAttempt} missed`)} disabled={saving}><Plus size={14} /> Miss · 0</button></div> : <p className={styles.scoreEditHint}>All three attempts have been recorded.</p>}
+    </div>
+
+    <div className={styles.scoreEditGroup}>
+      <div className={styles.scoreEditGroupHeading}><b>Bonuses and penalties</b><small>Add missing awards or remove individual entries.</small></div>
+      {speedEvents.map((entry) => <div className={styles.scoreEditEvent} key={entry.id}><span>{entry.label}</span><b>{entry.points >= 0 ? "+" : ""}{entry.points} pts</b><button className={styles.scoreRemoveButton} onClick={() => onRemove(entry.id)} disabled={saving}><Trash2 size={14} /> Remove</button></div>)}
+      <div className={styles.scoreEditChoices}><span>Speed Escape · +2 per 30 seconds · {speedTotal}/40 pts</span>{[2, 4, 6, 8, 10].map((points) => <button className={styles.scoreAwardButton} key={points} onClick={() => onAdd("speed", points, `Speed Escape · +${points} points`)} disabled={saving || speedTotal + points > 40}><Plus size={14} /> Add +{points}</button>)}</div>
+      {autonomyZones.map((zone) => {
+        const label = `Autonomous navigation · ${zone}`;
+        const entry = team.events.find((eventEntry) => eventEntry.key === "autonomy" && eventEntry.label === label);
+        return <div className={styles.scoreEditEvent} key={zone}><span>Autonomous zone · {zone}</span><b>{entry ? `+${entry.points} pts` : "Not recorded"}</b>{entry ? <button className={styles.scoreRemoveButton} onClick={() => onRemove(entry.id)} disabled={saving}><Trash2 size={14} /> Remove</button> : <button className={styles.scoreAwardButton} onClick={() => onAdd("autonomy", 10, label)} disabled={saving}><Plus size={14} /> Add +10 points</button>}</div>;
+      })}
+      {penalties.map((entry) => <div className={styles.scoreEditEvent} key={entry.id}><span>{entry.label}</span><b>{entry.points} pts</b><button className={styles.scoreRemoveButton} onClick={() => onRemove(entry.id)} disabled={saving}><Trash2 size={14} /> Remove</button></div>)}
+      <div className={styles.scoreEditChoices}><span>Add a penalty</span><button className={styles.scoreNeutralButton} onClick={() => onAdd("penalty", -3, "Topple · referee recovery · −3")} disabled={saving}><Plus size={14} /> Topple · −3</button><button className={styles.scoreNeutralButton} onClick={() => onAdd("penalty", -3, "Hand-touch · −3")} disabled={saving}><Plus size={14} /> Hand-touch · −3</button></div>
+    </div>
+    {saving && <small className={styles.scoreEditSaving}>Saving score changes…</small>}
+  </section>;
+}
+
 export default function Scoreboard({ mode }: { mode: "public" | "admin" }) {
   const isAdmin = mode === "admin";
   const [snapshot, setSnapshot] = useState<{ state: CompetitionState; revision: string }>({
@@ -57,6 +130,7 @@ export default function Scoreboard({ mode }: { mode: "public" | "admin" }) {
   const [password, setPassword] = useState("");
   const [teamName, setTeamName] = useState("");
   const [teamToDelete, setTeamToDelete] = useState<string | null>(null);
+  const [editingPastScoresTeamId, setEditingPastScoresTeamId] = useState<string | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
   const [confirmScoresReset, setConfirmScoresReset] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -153,6 +227,7 @@ export default function Scoreboard({ mode }: { mode: "public" | "admin" }) {
   }, [activityToast]);
 
   const activeTeam = state.teams.find((team) => team.id === state.activeTeamId) ?? null;
+  const editingPastScoresTeam = state.teams.find((team) => team.id === editingPastScoresTeamId && team.finished) ?? null;
   const running = Boolean(state.startedAt && !state.stoppedAt && activeTeam);
   const remaining = useMemo(() => {
     if (!state.startedAt) return MAX_RUN_SECONDS;
@@ -223,7 +298,10 @@ export default function Scoreboard({ mode }: { mode: "public" | "admin" }) {
       startedAt: state.activeTeamId === id ? null : state.startedAt,
       stoppedAt: state.activeTeamId === id ? null : state.stoppedAt,
     };
-    if (await persist(next, revision)) setTeamToDelete(null);
+    if (await persist(next, revision)) {
+      setTeamToDelete(null);
+      if (editingPastScoresTeamId === id) setEditingPastScoresTeamId(null);
+    }
   }
 
   function selectTeam(id: string) {
@@ -233,7 +311,35 @@ export default function Scoreboard({ mode }: { mode: "public" | "admin" }) {
 
   function startRun() {
     if (!activeTeam || activeTeam.finished) return;
+    setEditingPastScoresTeamId(null);
     void persist({ ...state, startedAt: new Date().toISOString(), stoppedAt: null }, revision);
+  }
+
+  function addPastScore(key: ScoreKey, points: number, label: string) {
+    if (running || !editingPastScoresTeam) return;
+    const existing = editingPastScoresTeam.events;
+    const singleAward = [...mainStages.map((stage) => stage.key), "clean"].includes(key);
+    if (singleAward && existing.some((entry) => entry.key === key)) return;
+    if (key === "shot" && existing.filter((entry) => entry.key === "shot").length >= 3) return;
+    if (key === "autonomy" && existing.some((entry) => entry.label === label)) return;
+    if (key === "speed") {
+      const speedTotal = existing.filter((entry) => entry.key === "speed").reduce((sum, entry) => sum + entry.points, 0);
+      if (points <= 0 || points % 2 !== 0 || speedTotal + points > 40) return;
+    }
+    const updated = { ...editingPastScoresTeam, events: [...existing, event(key, points, label)] };
+    void persist({ ...state, teams: state.teams.map((team) => team.id === updated.id ? updated : team) }, revision);
+  }
+
+  function removePastScore(eventId: string) {
+    if (running || !editingPastScoresTeam) return;
+    const updated = { ...editingPastScoresTeam, events: editingPastScoresTeam.events.filter((entry) => entry.id !== eventId) };
+    void persist({ ...state, teams: state.teams.map((team) => team.id === updated.id ? updated : team) }, revision);
+  }
+
+  function removePastScoreType(key: ScoreKey) {
+    if (running || !editingPastScoresTeam) return;
+    const updated = { ...editingPastScoresTeam, events: editingPastScoresTeam.events.filter((entry) => entry.key !== key) };
+    void persist({ ...state, teams: state.teams.map((team) => team.id === updated.id ? updated : team) }, revision);
   }
 
   function record(key: ScoreKey, points: number, label?: string) {
@@ -269,6 +375,7 @@ export default function Scoreboard({ mode }: { mode: "public" | "admin" }) {
       setConfirmReset(false);
       setConfirmScoresReset(false);
       setTeamToDelete(null);
+      setEditingPastScoresTeamId(null);
     }
   }
 
@@ -278,6 +385,7 @@ export default function Scoreboard({ mode }: { mode: "public" | "admin" }) {
       setConfirmScoresReset(false);
       setConfirmReset(false);
       setTeamToDelete(null);
+      setEditingPastScoresTeamId(null);
     }
   }
 
@@ -325,8 +433,9 @@ export default function Scoreboard({ mode }: { mode: "public" | "admin" }) {
       {isAdmin && <section className={styles.organizerPanel}>
         <div className={styles.panelTitle}><div><p className={styles.eyebrow}>ORGANIZER CONTROLS</p><h3>Run control</h3></div><div className={styles.panelActions}><span className={styles.quickHint} aria-live="polite">{saving ? "Saving changes…" : "Tap once to log each result"}</span><a className={styles.trackTwoButton} href="/robolympics/track2/admin"><Trophy size={15} /> Track 2 dashboard <ArrowLeft className={styles.flipIcon} size={15} /></a></div></div>
         {!running && <div className={styles.teamSetup}><form onSubmit={addTeam} className={styles.addTeamForm}><input aria-label="Team name" placeholder="Add a team before competition" value={teamName} onChange={(e) => setTeamName(e.target.value)} disabled={saving} /><button disabled={!teamName.trim() || saving}><Plus size={16} /> Add team</button></form>
-          {!!state.teams.length && <div className={styles.teamPicker}><span>SELECT TEAM · TAP AGAIN TO DESELECT</span>{state.teams.map((team) => <div key={team.id} className={styles.teamItem}><button onClick={() => selectTeam(team.id)} className={`${styles.teamChip} ${activeTeam?.id === team.id ? styles.selectedChip : ""}`} disabled={team.finished || saving} aria-pressed={activeTeam?.id === team.id}>{team.name}{team.finished && <Check size={14} />}</button><button className={styles.deleteTeamButton} onClick={() => setTeamToDelete(team.id)} disabled={saving} aria-label={`Delete ${team.name}`} title={`Delete ${team.name}`}><Trash2 size={14} /></button></div>)}</div>}
+          {!!state.teams.length && <div className={styles.teamPicker}><span>SELECT TEAM · TAP AGAIN TO DESELECT</span>{state.teams.map((team) => <div key={team.id} className={styles.teamItem}><button onClick={() => selectTeam(team.id)} className={`${styles.teamChip} ${activeTeam?.id === team.id ? styles.selectedChip : ""}`} disabled={team.finished || saving} aria-pressed={activeTeam?.id === team.id}>{team.name}{team.finished && <Check size={14} />}</button>{team.finished && <button className={styles.editTeamButton} onClick={() => setEditingPastScoresTeamId(team.id)} disabled={saving} aria-label={`Edit ${team.name} scores`} title={`Edit ${team.name} scores`}><Pencil size={14} /></button>}<button className={styles.deleteTeamButton} onClick={() => setTeamToDelete(team.id)} disabled={saving} aria-label={`Delete ${team.name}`} title={`Delete ${team.name}`}><Trash2 size={14} /></button></div>)}</div>}
           {teamToDelete && <div className={styles.confirmRow} role="alertdialog" aria-label="Confirm team deletion"><span>Delete <b>{state.teams.find((team) => team.id === teamToDelete)?.name}</b> and its scores?</span><button className={styles.undoButton} disabled={saving} onClick={() => setTeamToDelete(null)}>Cancel</button><button className={styles.dangerButton} disabled={saving} onClick={() => void deleteTeam(teamToDelete)}>{saving ? "Saving…" : "Delete team"}</button></div>}
+          {editingPastScoresTeam && <PastScoresEditor team={editingPastScoresTeam} saving={saving} onAdd={addPastScore} onRemove={removePastScore} onRemoveType={removePastScoreType} onDone={() => setEditingPastScoresTeamId(null)} />}
           {activeTeam && !activeTeam.finished && <button className={styles.startButton} onClick={startRun} disabled={saving}><Radio size={17} /> Start {activeTeam.name}&apos;s run <span>10:00</span></button>}
           {activeTeam?.finished && <p className={styles.muted}>This team&apos;s run is recorded. Select the next team above.</p>}
         </div>}

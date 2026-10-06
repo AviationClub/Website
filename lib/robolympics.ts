@@ -87,9 +87,10 @@ function mergeCompetitionState(base: CompetitionState, requested: CompetitionSta
     const wantedEventIds = new Set(wanted.events.map((entry) => entry.id));
     const removedEventIds = new Set(before.events.filter((entry) => !wantedEventIds.has(entry.id)).map((entry) => entry.id));
     const mergedEvents = new Map(current.events.filter((entry) => !removedEventIds.has(entry.id)).map((entry) => [entry.id, entry]));
-    const beforeEventIds = new Set(before.events.map((entry) => entry.id));
+    const beforeEvents = new Map(before.events.map((entry) => [entry.id, entry]));
     for (const entry of wanted.events) {
-      if (!beforeEventIds.has(entry.id)) mergedEvents.set(entry.id, entry);
+      const prior = beforeEvents.get(entry.id);
+      if (!prior || stableJson(entry) !== stableJson(prior)) mergedEvents.set(entry.id, entry);
     }
 
     latestTeams.set(id, {

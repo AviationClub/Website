@@ -44,6 +44,15 @@ export default function RobolympicsResults() {
       { place: 3, medal: "bronze", name: teams.get(third.winnerId) ?? "Third place", note: "THIRD PLACE" },
     ] as const;
   }, [state]);
+  const completedBracket = useMemo(() => {
+    const matches = state.track2?.matches ?? [];
+    const quarterfinals = matches.filter((match) => match.round === "quarterfinal").sort((a, b) => a.slot - b.slot);
+    const semifinals = matches.filter((match) => match.round === "semifinal").sort((a, b) => a.slot - b.slot);
+    const final = matches.find((match) => match.round === "final");
+    const thirdPlace = matches.find((match) => match.round === "thirdPlace");
+    if (!placements || quarterfinals.length !== 4 || semifinals.length !== 2 || !final || !thirdPlace || [...quarterfinals, ...semifinals, final, thirdPlace].some((match) => match.status !== "complete")) return null;
+    return { quarterfinals, semifinals, final, thirdPlace, teams: new Map(state.teams.map((team) => [team.id, team.name])) };
+  }, [placements, state]);
 
   return <main className={styles.shell}>
     <header className={styles.topbar}>
@@ -63,7 +72,28 @@ export default function RobolympicsResults() {
         <small>{team.note}</small><h2>{team.name}</h2><div className={styles.podiumBase}><span>{team.place === 1 ? "GOLD" : team.place === 2 ? "SILVER" : "BRONZE"}</span><b>{team.place}</b></div>
       </article>)}
     </section>}
+    {completedBracket && <section className={styles.fullBracket} aria-label="Complete Track 2 tournament bracket">
+      <div className={styles.fullBracketHeading}><div><p className={styles.eyebrow}>THE ROAD TO THE FINAL</p><h2>Complete tournament bracket</h2></div><span>8 TEAMS · 8 MATCHES</span></div>
+      <div className={styles.bracketColumns}>
+        <section className={styles.bracketRound}><header><small>ROUND 1</small><b>Quarterfinals</b></header><div className={styles.bracketMatchList}>{completedBracket.quarterfinals.map((match) => <BracketMatch key={match.id} match={match} teams={completedBracket.teams} />)}</div></section>
+        <div className={styles.bracketAdvance} aria-hidden="true">›</div>
+        <section className={styles.bracketRound}><header><small>ROUND 2</small><b>Semifinals</b></header><p className={styles.bracketFeed}>QF 1 winner vs QF 2 winner</p><BracketMatch match={completedBracket.semifinals[0]} teams={completedBracket.teams} /><p className={styles.bracketFeed}>QF 3 winner vs QF 4 winner</p><BracketMatch match={completedBracket.semifinals[1]} teams={completedBracket.teams} /></section>
+        <div className={styles.bracketAdvance} aria-hidden="true">›</div>
+        <section className={styles.bracketRound}><header><small>PLACEMENT & CHAMPIONSHIP</small><b>Final rounds</b></header><p className={styles.bracketFeed}>Semifinal losers · played before the final</p><BracketMatch match={completedBracket.thirdPlace} teams={completedBracket.teams} /><p className={styles.bracketFeed}>Semifinal winners</p><BracketMatch match={completedBracket.final} teams={completedBracket.teams} /></section>
+      </div>
+    </section>}
     <nav className={styles.resultsLinks}><a href="/robolympics/track2"><ArrowLeft size={16} /> View the championship rounds</a><a href="/robolympics">Track 1 standings</a></nav>
     <footer className={styles.footer}><span>ROBOLYMPICS <b>·</b> AVIATION CLUB · AIN SHAMS UNIVERSITY</span></footer>
   </main>;
+}
+
+function BracketMatch({ match, teams }: { match: TrackTwoMatch; teams: Map<string, string> }) {
+  const games = match.games ?? [];
+  const name = (id: string | null) => id ? teams.get(id) ?? "Team" : "—";
+  const wins = (id: string | null) => id ? games.filter((game) => game.winnerId === id).length : 0;
+  return <article className={styles.bracketMatch}>
+    <div className={styles.bracketTeam}><span>{name(match.teamAId)}</span><b>{wins(match.teamAId)}</b>{match.winnerId === match.teamAId && <i>WINNER</i>}</div>
+    <div className={styles.bracketTeam}><span>{name(match.teamBId)}</span><b>{wins(match.teamBId)}</b>{match.winnerId === match.teamBId && <i>WINNER</i>}</div>
+    <div className={styles.bracketGameLog}>{games.map((game) => <span key={game.number}>M{game.number}: {name(game.winnerId)}</span>)}</div>
+  </article>;
 }
