@@ -115,8 +115,14 @@
 .undoButton, .finishButton { min-height: 36px; padding: 0 11px; display: inline-flex; align-items: center; gap: 6px; border: 1px solid #aaa; border-radius: 3px; background: #fff; color: var(--ink); font-size: 12px; font-weight: 700; }
 .undoButton:disabled { opacity: .5; cursor: not-allowed; }
 .finishButton { border-color: #555; background: #555; color: #fff; }
-.resetArea { margin-top: 15px; text-align: right; }
+.resetArea { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 15px; }
 .resetArea button { border: 0; background: transparent; color: var(--red); font-size: 11px; text-decoration: underline; }
+.resetArea .resetActionButton { padding: 8px 11px; border: 1px solid #c7c7c7; border-radius: 3px; background: #fff; color: #9e3827; font-size: 12px; font-weight: 700; text-decoration: none; }
+.resetArea .resetActionButton:hover:not(:disabled) { border-color: var(--red); background: #fff6f4; }
+.resetArea .resetActionButton:disabled { opacity: .5; cursor: not-allowed; }
+.resetArea .confirmRow { flex: 0 0 100%; }
+.resetArea .confirmRow .undoButton { border: 1px solid #aaa; background: #fff; color: var(--ink); text-decoration: none; }
+.resetArea .confirmRow .dangerButton { border: 1px solid #a83219; background: #a83219; color: #fff; text-decoration: none; }
 .confirmRow { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; padding: 10px; border: 1px solid #dfaaa0; background: #fff6f4; text-align: left; }
 .confirmRow > span { margin-right: auto; color: var(--ink); font-size: 12px; }
 .dangerButton { min-height: 36px; padding: 0 11px; border: 1px solid #a83219; border-radius: 3px; background: #a83219; color: #fff; font-size: 12px; font-weight: 700; }

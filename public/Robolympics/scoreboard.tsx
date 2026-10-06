@@ -58,6 +58,7 @@ export default function Scoreboard({ mode }: { mode: "public" | "admin" }) {
   const [teamName, setTeamName] = useState("");
   const [teamToDelete, setTeamToDelete] = useState<string | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
+  const [confirmScoresReset, setConfirmScoresReset] = useState(false);
   const [saving, setSaving] = useState(false);
   const [now, setNow] = useState(Date.now());
   const savingRef = useRef(false);
@@ -226,7 +227,7 @@ export default function Scoreboard({ mode }: { mode: "public" | "admin" }) {
 
   function selectTeam(id: string) {
     if (running) return;
-    void persist({ ...state, activeTeamId: id, startedAt: null, stoppedAt: null }, revision);
+    void persist({ ...state, activeTeamId: state.activeTeamId === id ? null : id, startedAt: null, stoppedAt: null }, revision);
   }
 
   function startRun() {
@@ -266,6 +267,16 @@ export default function Scoreboard({ mode }: { mode: "public" | "admin" }) {
 
   async function resetCompetition() {
     if (await persist(emptyCompetitionState, revision)) {
+      setConfirmReset(false);
+      setConfirmScoresReset(false);
+      setTeamToDelete(null);
+    }
+  }
+
+  async function resetScoresKeepTeams() {
+    const teams = state.teams.map((team) => ({ ...team, events: [], finished: false }));
+    if (await persist({ teams, activeTeamId: null, startedAt: null, stoppedAt: null }, revision)) {
+      setConfirmScoresReset(false);
       setConfirmReset(false);
       setTeamToDelete(null);
     }
@@ -315,7 +326,7 @@ export default function Scoreboard({ mode }: { mode: "public" | "admin" }) {
       {isAdmin && <section className={styles.organizerPanel}>
         <div className={styles.panelTitle}><div><p className={styles.eyebrow}>ORGANIZER CONTROLS</p><h3>Run control</h3></div><div className={styles.panelActions}><span className={styles.quickHint} aria-live="polite">{saving ? "Saving changes…" : "Tap once to log each result"}</span><a className={styles.trackTwoButton} href="/robolympics/track2/admin"><Trophy size={15} /> Track 2 dashboard <ArrowLeft className={styles.flipIcon} size={15} /></a></div></div>
         {!running && <div className={styles.teamSetup}><form onSubmit={addTeam} className={styles.addTeamForm}><input aria-label="Team name" placeholder="Add a team before competition" value={teamName} onChange={(e) => setTeamName(e.target.value)} disabled={saving} /><button disabled={!teamName.trim() || saving}><Plus size={16} /> Add team</button></form>
-          {!!state.teams.length && <div className={styles.teamPicker}><span>SELECT NEXT TEAM</span>{state.teams.map((team) => <div key={team.id} className={styles.teamItem}><button onClick={() => selectTeam(team.id)} className={`${styles.teamChip} ${activeTeam?.id === team.id ? styles.selectedChip : ""}`} disabled={team.finished || saving}>{team.name}{team.finished && <Check size={14} />}</button><button className={styles.deleteTeamButton} onClick={() => setTeamToDelete(team.id)} disabled={saving} aria-label={`Delete ${team.name}`} title={`Delete ${team.name}`}><Trash2 size={14} /></button></div>)}</div>}
+          {!!state.teams.length && <div className={styles.teamPicker}><span>SELECT TEAM · TAP AGAIN TO DESELECT</span>{state.teams.map((team) => <div key={team.id} className={styles.teamItem}><button onClick={() => selectTeam(team.id)} className={`${styles.teamChip} ${activeTeam?.id === team.id ? styles.selectedChip : ""}`} disabled={team.finished || saving} aria-pressed={activeTeam?.id === team.id}>{team.name}{team.finished && <Check size={14} />}</button><button className={styles.deleteTeamButton} onClick={() => setTeamToDelete(team.id)} disabled={saving} aria-label={`Delete ${team.name}`} title={`Delete ${team.name}`}><Trash2 size={14} /></button></div>)}</div>}
           {teamToDelete && <div className={styles.confirmRow} role="alertdialog" aria-label="Confirm team deletion"><span>Delete <b>{state.teams.find((team) => team.id === teamToDelete)?.name}</b> and its scores?</span><button className={styles.undoButton} disabled={saving} onClick={() => setTeamToDelete(null)}>Cancel</button><button className={styles.dangerButton} disabled={saving} onClick={() => void deleteTeam(teamToDelete)}>{saving ? "Saving…" : "Delete team"}</button></div>}
           {activeTeam && !activeTeam.finished && <button className={styles.startButton} onClick={startRun} disabled={saving}><Radio size={17} /> Start {activeTeam.name}&apos;s run <span>10:00</span></button>}
           {activeTeam?.finished && <p className={styles.muted}>This team&apos;s run is recorded. Select the next team above.</p>}
@@ -327,7 +338,10 @@ export default function Scoreboard({ mode }: { mode: "public" | "admin" }) {
           </div>
           <div className={styles.runFooter}><button className={styles.undoButton} onClick={undoLast} disabled={!activeTeam.events.length || saving}><RotateCcw size={16} /> Undo last entry</button><div><span>Tap the result as it happens. Current total <b>{totalFor(activeTeam.events)} pts</b></span><button className={styles.finishButton} onClick={finishRun} disabled={saving}><CircleStop size={16} /> {saving ? "Saving…" : "End run"}</button></div></div>
         </>}
-        {!running && state.teams.length > 0 && <div className={styles.resetArea}>{confirmReset ? <div className={styles.confirmRow} role="alertdialog" aria-label="Confirm competition reset"><span>Delete every team, score and run record?</span><button className={styles.undoButton} disabled={saving} onClick={() => setConfirmReset(false)}>Cancel</button><button className={styles.dangerButton} disabled={saving} onClick={() => void resetCompetition()}>{saving ? "Resetting…" : "Confirm reset"}</button></div> : <button onClick={() => setConfirmReset(true)} disabled={saving}>Reset all teams and scores</button>}</div>}
+        {!running && state.teams.length > 0 && <div className={styles.resetArea}>
+          {confirmScoresReset ? <div className={styles.confirmRow} role="alertdialog" aria-label="Confirm score reset"><span>Clear all team scores, run status, and the Track 2 packet while keeping the team list?</span><button className={styles.undoButton} disabled={saving} onClick={() => setConfirmScoresReset(false)}>Cancel</button><button className={styles.dangerButton} disabled={saving} onClick={() => void resetScoresKeepTeams()}>{saving ? "Resetting…" : "Confirm score reset"}</button></div> : <button className={styles.resetActionButton} onClick={() => { setConfirmReset(false); setConfirmScoresReset(true); }} disabled={saving}>Reset all scores · keep teams</button>}
+          {confirmReset ? <div className={styles.confirmRow} role="alertdialog" aria-label="Confirm competition reset"><span>Delete every team, score and run record?</span><button className={styles.undoButton} disabled={saving} onClick={() => setConfirmReset(false)}>Cancel</button><button className={styles.dangerButton} disabled={saving} onClick={() => void resetCompetition()}>{saving ? "Resetting…" : "Confirm reset"}</button></div> : <button className={styles.resetActionButton} onClick={() => { setConfirmScoresReset(false); setConfirmReset(true); }} disabled={saving}>Reset all teams and scores</button>}
+        </div>}
       </section>}
     </section>
     <section className={styles.standings}>
