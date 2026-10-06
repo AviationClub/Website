@@ -159,6 +159,7 @@ export default function Scoreboard({ mode }: { mode: "public" | "admin" }) {
     return Math.max(0, MAX_RUN_SECONDS - (now - new Date(state.startedAt).getTime()) / 1000);
   }, [now, state.startedAt]);
   const recording = running && remaining > 0;
+  const cleanRunRecorded = Boolean(activeTeam?.events.some((entry) => entry.key === "clean"));
   const sortedTeams = [...state.teams].sort((a, b) => totalFor(b.events) - totalFor(a.events) || a.name.localeCompare(b.name));
 
   async function persist(next: CompetitionState, expectedRevision: string): Promise<boolean> {
@@ -245,9 +246,7 @@ export default function Scoreboard({ mode }: { mode: "public" | "admin" }) {
     if (!activeTeam || !running) return;
     const completedAt = new Date();
     const elapsed = (completedAt.getTime() - new Date(state.startedAt!).getTime()) / 1000;
-    const clean = !activeTeam.events.some((entry) => entry.label.startsWith("Topple"));
     const events = [...activeTeam.events];
-    if (clean) events.push(event("clean", 15));
     const speedPoints = Math.floor(Math.max(0, MAX_RUN_SECONDS - elapsed) / 30) * 2;
     if (speedPoints > 0) events.push(event("speed", speedPoints, `Speed Escape · +${speedPoints} points`));
     const updated = { ...activeTeam, events, finished: true };
@@ -334,7 +333,7 @@ export default function Scoreboard({ mode }: { mode: "public" | "admin" }) {
         {running && activeTeam && <>
           <div className={styles.controlsGrid}><div className={styles.controlGroup}><div className={styles.controlHeading}><span>01</span><b>Stage completion</b></div><div className={styles.actionGrid}>{stageButtons(activeTeam)}</div></div>
           <div className={styles.controlGroup}><div className={styles.controlHeading}><span>02</span><b>Precision shot · Stage 4.b</b></div><div className={styles.actionGrid}>{shotControls(activeTeam, recording, saving, record)}</div></div>
-            <div className={styles.controlGroup}><div className={styles.controlHeading}><span>03</span><b>Bonuses & penalties</b></div><div className={styles.actionGrid}>{["Torque Ramp", "Suspension Stairs", "Rubble Area", "Authentication Override"].map((zone) => { const already = activeTeam.events.some((entry) => entry.label === `Autonomous navigation · ${zone}`); return <button key={zone} className={`${styles.actionButton} ${already ? styles.recorded : ""}`} disabled={!recording || already || saving} onClick={() => record("autonomy", 10, `Autonomous navigation · ${zone}`)}><Activity size={17} /><span><b>Autonomous zone</b><small>{already ? "Recorded · +10 points" : `+10 · ${zone}`}</small></span></button>; })}<button className={`${styles.actionButton} ${styles.penaltyButton}`} disabled={!recording || saving} onClick={() => record("penalty", -3, "Topple · referee recovery · −3") }><Minus size={17} /><span><b>Topple / referee reset</b><small>−3 points</small></span></button><button className={`${styles.actionButton} ${styles.penaltyButton}`} disabled={!recording || saving} onClick={() => record("penalty", -3, "Hand-touch · −3")}><Minus size={17} /><span><b>Hand-touch</b><small>−3 points</small></span></button></div></div>
+            <div className={styles.controlGroup}><div className={styles.controlHeading}><span>03</span><b>Clean run, bonuses & penalties</b></div><div className={styles.actionGrid}><button className={`${styles.actionButton} ${cleanRunRecorded ? styles.recorded : ""}`} disabled={!recording || cleanRunRecorded || saving} onClick={() => record("clean", 15, "Clean Run · +15 points")}><Check size={17} /><span><b>Award Clean Run</b><small>{cleanRunRecorded ? "Recorded · +15 points" : "+15 points · manual award"}</small></span></button>{["Torque Ramp", "Suspension Stairs", "Rubble Area", "Authentication Override"].map((zone) => { const already = activeTeam.events.some((entry) => entry.label === `Autonomous navigation · ${zone}`); return <button key={zone} className={`${styles.actionButton} ${already ? styles.recorded : ""}`} disabled={!recording || already || saving} onClick={() => record("autonomy", 10, `Autonomous navigation · ${zone}`)}><Activity size={17} /><span><b>Autonomous zone</b><small>{already ? "Recorded · +10 points" : `+10 · ${zone}`}</small></span></button>; })}<button className={`${styles.actionButton} ${styles.penaltyButton}`} disabled={!recording || saving} onClick={() => record("penalty", -3, "Topple · referee recovery · −3") }><Minus size={17} /><span><b>Topple / referee reset</b><small>−3 points</small></span></button><button className={`${styles.actionButton} ${styles.penaltyButton}`} disabled={!recording || saving} onClick={() => record("penalty", -3, "Hand-touch · −3")}><Minus size={17} /><span><b>Hand-touch</b><small>−3 points</small></span></button></div></div>
           </div>
           <div className={styles.runFooter}><button className={styles.undoButton} onClick={undoLast} disabled={!activeTeam.events.length || saving}><RotateCcw size={16} /> Undo last entry</button><div><span>Tap the result as it happens. Current total <b>{totalFor(activeTeam.events)} pts</b></span><button className={styles.finishButton} onClick={finishRun} disabled={saving}><CircleStop size={16} /> {saving ? "Saving…" : "End run"}</button></div></div>
         </>}
