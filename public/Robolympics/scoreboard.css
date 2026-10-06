@@ -258,8 +258,8 @@
 .teamCell { color: var(--ink) !important; font-size: 13px !important; font-weight: 700; text-align: left !important; }
 .teamCell small { display: block; margin-top: 2px; color: var(--red); font-size: 10px; font-weight: 700; }
 .teamCell small i { width: 6px; height: 6px; display: inline-block; margin-right: 4px; border-radius: 50%; background: var(--red); }
-.totalHead { color: var(--red) !important; }
-.totalCell { color: var(--ink) !important; font-size: 15px !important; font-weight: 700; }
+.totalHead { width: 82px; min-width: 82px; color: var(--red) !important; }
+.totalCell { width: 82px; min-width: 82px; color: var(--ink) !important; font-size: 15px !important; font-weight: 700; }
 .totalCell small { margin-left: 3px; color: var(--muted); font-size: 10px; font-weight: 400; }
 .bonusCell { color: #168448 !important; }
 .activeRow { background: #fff8f5; }
