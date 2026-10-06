@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
 import { ArrowLeft, Check, Crown, Flag, LoaderCircle, LogOut, Radio, Shield, Shuffle, Trophy } from "lucide-react";
 import type { CompetitionState, CompetitionTeam, TrackTwoGameResult, TrackTwoMatch, TrackTwoRound, TrackTwoState } from "./score-model";
 import { emptyCompetitionState, totalFor } from "./score-model";
@@ -25,6 +26,7 @@ function getCurrentRound(track: TrackTwoState | undefined): TrackTwoRound | null
 }
 
 export default function TrackTwo({ admin = false }: { admin?: boolean }) {
+  const router = useRouter();
   const [snapshot, setSnapshot] = useState<{ state: CompetitionState; revision: string }>({ state: emptyCompetitionState, revision: "" });
   const [ready, setReady] = useState(false);
   const [error, setError] = useState("");
@@ -85,6 +87,10 @@ export default function TrackTwo({ admin = false }: { admin?: boolean }) {
     const timer = window.setInterval(() => { if (!savingRef.current) void loadState(); }, 3000);
     return () => window.clearInterval(timer);
   }, [admin, authChecked, authenticated, loadState]);
+
+  useEffect(() => {
+    if (!admin && ready && !error && !track?.matches.length) router.replace("/robolympics");
+  }, [admin, ready, error, track?.matches.length, router]);
 
   useEffect(() => {
     const timer = window.setInterval(() => setClockNow(Date.now()), 1000);
@@ -272,7 +278,7 @@ export default function TrackTwo({ admin = false }: { admin?: boolean }) {
   return <main className={`${styles.shell} ${admin ? styles.adminShell : ""}`}>
     <header className={styles.topbar}>
       <a href="/robolympics" className={styles.brand}><span className={styles.brandIcon}><img src="/Robolympics/aviation-club-logo.png" alt="Aviation Club" /></span><span>ROBOLYMPICS <small>2026 · TRACK II</small></span></a>
-      <div className={styles.topRight}>{admin ? <><span className={styles.adminBadge}><Shield size={14} /> ORGANIZER</span><button className={styles.iconButton} onClick={signOut} aria-label="Sign out"><LogOut size={17} /></button></> : <a className={styles.trackTwoButton} href="/robolympics/track2">Track 2 live board</a>}</div>
+      <div className={styles.topRight}>{admin ? <><span className={styles.adminBadge}><Shield size={14} /> ORGANIZER</span><button className={styles.iconButton} onClick={signOut} aria-label="Sign out"><LogOut size={17} /></button></> : track?.matches.length ? <a className={styles.trackTwoButton} href="/robolympics/track2">Track 2 live board</a> : null}</div>
     </header>
     <section className={styles.hero}><div><p className={styles.eyebrow}><span className={styles.liveDot} /> ROBOLYMPICS 2026 · TRACK II</p><h1>Championship <em>Rounds</em></h1><p className={styles.heroCopy}>A live knockout bracket featuring the organizer-selected Track 1 teams.</p></div><div className={styles.heroMeta}><Trophy size={18} /><small>QUARTERFINALS · SEMIFINALS · THIRD PLACE · FINAL</small></div></section>
     {!admin && podiumReady && <a className={styles.t2PodiumLink} href="/robolympics/results"><Trophy size={19} /><span><b>Final results and podium</b><small>See the gold, silver, and bronze medal teams</small></span><ArrowLeft size={18} /></a>}

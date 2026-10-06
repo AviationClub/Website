@@ -295,7 +295,7 @@ export default function Scoreboard({ mode }: { mode: "public" | "admin" }) {
   return <main className={styles.shell}>
     <header className={styles.topbar}>
       <a href="/" className={styles.brand}><span className={styles.brandIcon}><img src="/Robolympics/aviation-club-logo.png" alt="Aviation Club" /></span><span>ROBOLYMPICS <small>2026 · AVIATION CLUB</small></span></a>
-      <div className={styles.topRight}>{isAdmin ? <><span className={styles.adminBadge}><Shield size={14} /> ORGANIZER</span><button className={styles.iconButton} onClick={signOut} aria-label="Sign out"><LogOut size={17} /></button></> : <a className={styles.trackTwoButton} href="/robolympics/track2"><Trophy size={15} /> Track 2 live board</a>}</div>
+      <div className={styles.topRight}>{isAdmin ? <><span className={styles.adminBadge}><Shield size={14} /> ORGANIZER</span><button className={styles.iconButton} onClick={signOut} aria-label="Sign out"><LogOut size={17} /></button></> : state.track2?.matches.length ? <a className={styles.trackTwoButton} href="/robolympics/track2"><Trophy size={15} /> Track 2 live board</a> : null}</div>
     </header>
     <section className={styles.hero}>
       <div><p className={styles.eyebrow}><span className={styles.liveDot} /> ROBOLYMPICS 2026 · TRACK I</p><h1>The Vault <em>Escape</em></h1><p className={styles.heroCopy}>A live view of every run, all the way to the exit.</p></div>
