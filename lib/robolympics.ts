@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { emptyCompetitionState, type CompetitionState } from "../public/Robolympics/score-model";
 export { emptyCompetitionState } from "../public/Robolympics/score-model";
-export type { CompetitionState, CompetitionTeam, ScoreEvent, ScoreKey } from "../public/Robolympics/score-model";
+export type { CompetitionState, CompetitionTeam, ScoreEvent, ScoreKey, TrackTwoGameResult, TrackTwoMatch, TrackTwoRound, TrackTwoState } from "../public/Robolympics/score-model";
 
 export function getSupabaseAdmin() {
   const url = process.env.SUPABASE_URL;
@@ -103,11 +103,13 @@ function mergeCompetitionState(base: CompetitionState, requested: CompetitionSta
   const teams = [...latestTeams.values()];
   const activeTeamId = requested.activeTeamId !== base.activeTeamId ? requested.activeTeamId : latest.activeTeamId;
   const activeExists = activeTeamId === null || teams.some((team) => team.id === activeTeamId);
+  const track2 = stableJson(requested.track2) !== stableJson(base.track2) ? requested.track2 : latest.track2;
   return {
     teams,
     activeTeamId: activeExists ? activeTeamId : null,
     startedAt: !activeExists ? null : requested.startedAt !== base.startedAt ? requested.startedAt : latest.startedAt,
     stoppedAt: !activeExists ? null : requested.stoppedAt !== base.stoppedAt ? requested.stoppedAt : latest.stoppedAt,
+    ...(track2 ? { track2 } : {}),
   };
 }
 

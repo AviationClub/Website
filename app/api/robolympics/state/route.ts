@@ -24,10 +24,23 @@ export async function PUT(request: NextRequest) {
     const body = await request.json() as { baseState?: CompetitionState; state?: CompetitionState; expectedRevision?: string };
     const baseState = body?.baseState;
     const state = body?.state;
+    const validTrackTwo = (track: CompetitionState["track2"]) => track === undefined || Boolean(track
+      && Array.isArray(track.matches) && (track.matches.length === 7 || track.matches.length === 8)
+      && (track.activeMatchId === null || typeof track.activeMatchId === "string")
+      && typeof track.createdAt === "string"
+      && !track.matches.some((match) => !match || typeof match.id !== "string"
+        || !["quarterfinal", "semifinal", "final", "thirdPlace"].includes(match.round)
+        || !Number.isInteger(match.slot) || !["pending", "playing", "complete"].includes(match.status)
+        || (match.teamAId !== null && typeof match.teamAId !== "string")
+        || (match.teamBId !== null && typeof match.teamBId !== "string")
+        || (match.winnerId !== null && typeof match.winnerId !== "string")
+        || (match.games !== undefined && (!Array.isArray(match.games) || match.games.length > 5
+          || match.games.some((game) => !game || !Number.isInteger(game.number) || game.number < 1 || typeof game.winnerId !== "string")))));
     const validState = (value: CompetitionState | undefined) => Boolean(value && Array.isArray(value.teams) && value.teams.length <= 100
       && (value.activeTeamId === null || typeof value.activeTeamId === "string")
       && (value.startedAt === null || typeof value.startedAt === "string")
       && (value.stoppedAt === null || typeof value.stoppedAt === "string")
+      && validTrackTwo(value.track2)
       && !value.teams.some((team) => !team || typeof team.id !== "string" || typeof team.name !== "string"
         || team.name.length > 100 || !Array.isArray(team.events) || team.events.length > 3000
         || typeof team.finished !== "boolean"));

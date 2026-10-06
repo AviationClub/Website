@@ -143,8 +143,8 @@ export default function Scoreboard({ mode }: { mode: "public" | "admin" }) {
   useEffect(() => {
     if (!activityToast) return;
     setActivityToastVisible(true);
-    const hideTimer = window.setTimeout(() => setActivityToastVisible(false), 11_500);
-    const clearTimer = window.setTimeout(() => setActivityToast(null), 12_000);
+    const hideTimer = window.setTimeout(() => setActivityToastVisible(false), 14_500);
+    const clearTimer = window.setTimeout(() => setActivityToast(null), 15_000);
     return () => {
       window.clearTimeout(hideTimer);
       window.clearTimeout(clearTimer);
@@ -295,7 +295,7 @@ export default function Scoreboard({ mode }: { mode: "public" | "admin" }) {
   return <main className={styles.shell}>
     <header className={styles.topbar}>
       <a href="/" className={styles.brand}><span className={styles.brandIcon}><img src="/Robolympics/aviation-club-logo.png" alt="Aviation Club" /></span><span>ROBOLYMPICS <small>2026 · AVIATION CLUB</small></span></a>
-      <div className={styles.topRight}>{isAdmin && <><span className={styles.adminBadge}><Shield size={14} /> ORGANIZER</span><button className={styles.iconButton} onClick={signOut} aria-label="Sign out"><LogOut size={17} /></button></>}</div>
+      <div className={styles.topRight}>{isAdmin ? <><span className={styles.adminBadge}><Shield size={14} /> ORGANIZER</span><button className={styles.iconButton} onClick={signOut} aria-label="Sign out"><LogOut size={17} /></button></> : <a className={styles.trackTwoButton} href="/robolympics/track2"><Trophy size={15} /> Track 2 live board</a>}</div>
     </header>
     <section className={styles.hero}>
       <div><p className={styles.eyebrow}><span className={styles.liveDot} /> ROBOLYMPICS 2026 · TRACK I</p><h1>The Vault <em>Escape</em></h1><p className={styles.heroCopy}>A live view of every run, all the way to the exit.</p></div>
@@ -313,7 +313,7 @@ export default function Scoreboard({ mode }: { mode: "public" | "admin" }) {
         {activityToast && <div key={activityToast.id} className={`${styles.actionToast} ${activityToast.points < 0 ? styles.actionToastPenalty : ""} ${activityToastVisible ? styles.actionToastVisible : ""}`} role="status" aria-live="polite"><Activity size={17} /><span className={styles.actionToastLabel}><small>LIVE RESULT</small>{activityToast.label}</span><b className={activityToast.points < 0 ? styles.actionPenalty : styles.actionPoints}>{activityToast.points > 0 ? "+" : ""}{activityToast.points} pts</b></div>}
       </div> : <div className={styles.noPlayer}><Radio size={19} />No team selected yet</div>}
       {isAdmin && <section className={styles.organizerPanel}>
-        <div className={styles.panelTitle}><div><p className={styles.eyebrow}>ORGANIZER CONTROLS</p><h3>Run control</h3></div><span className={styles.quickHint} aria-live="polite">{saving ? "Saving changes…" : "Tap once to log each result"}</span></div>
+        <div className={styles.panelTitle}><div><p className={styles.eyebrow}>ORGANIZER CONTROLS</p><h3>Run control</h3></div><div className={styles.panelActions}><span className={styles.quickHint} aria-live="polite">{saving ? "Saving changes…" : "Tap once to log each result"}</span><a className={styles.trackTwoButton} href="/robolympics/track2/admin"><Trophy size={15} /> Track 2 dashboard <ArrowLeft className={styles.flipIcon} size={15} /></a></div></div>
         {!running && <div className={styles.teamSetup}><form onSubmit={addTeam} className={styles.addTeamForm}><input aria-label="Team name" placeholder="Add a team before competition" value={teamName} onChange={(e) => setTeamName(e.target.value)} disabled={saving} /><button disabled={!teamName.trim() || saving}><Plus size={16} /> Add team</button></form>
           {!!state.teams.length && <div className={styles.teamPicker}><span>SELECT NEXT TEAM</span>{state.teams.map((team) => <div key={team.id} className={styles.teamItem}><button onClick={() => selectTeam(team.id)} className={`${styles.teamChip} ${activeTeam?.id === team.id ? styles.selectedChip : ""}`} disabled={team.finished || saving}>{team.name}{team.finished && <Check size={14} />}</button><button className={styles.deleteTeamButton} onClick={() => setTeamToDelete(team.id)} disabled={saving} aria-label={`Delete ${team.name}`} title={`Delete ${team.name}`}><Trash2 size={14} /></button></div>)}</div>}
           {teamToDelete && <div className={styles.confirmRow} role="alertdialog" aria-label="Confirm team deletion"><span>Delete <b>{state.teams.find((team) => team.id === teamToDelete)?.name}</b> and its scores?</span><button className={styles.undoButton} disabled={saving} onClick={() => setTeamToDelete(null)}>Cancel</button><button className={styles.dangerButton} disabled={saving} onClick={() => void deleteTeam(teamToDelete)}>{saving ? "Saving…" : "Delete team"}</button></div>}
