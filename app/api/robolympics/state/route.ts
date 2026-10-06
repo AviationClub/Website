@@ -27,6 +27,7 @@ export async function PUT(request: NextRequest) {
     const validTrackTwo = (track: CompetitionState["track2"]) => track === undefined || Boolean(track
       && Array.isArray(track.matches) && (track.matches.length === 7 || track.matches.length === 8)
       && (track.activeMatchId === null || typeof track.activeMatchId === "string")
+      && (track.activeGameStartedAt === undefined || track.activeGameStartedAt === null || typeof track.activeGameStartedAt === "string")
       && typeof track.createdAt === "string"
       && !track.matches.some((match) => !match || typeof match.id !== "string"
         || !["quarterfinal", "semifinal", "final", "thirdPlace"].includes(match.round)

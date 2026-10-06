@@ -16,6 +16,7 @@ export type TrackTwoMatch = {
 export type TrackTwoState = {
   matches: TrackTwoMatch[];
   activeMatchId: string | null;
+  activeGameStartedAt?: string | null;
   createdAt: string;
 };
 export type CompetitionState = {

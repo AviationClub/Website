@@ -6,10 +6,12 @@ import type { CompetitionState, CompetitionTeam, TrackTwoGameResult, TrackTwoMat
 import { emptyCompetitionState, totalFor } from "./score-model";
 
 const styles = new Proxy({} as Record<string, string>, { get: (_target, key) => typeof key === "string" ? key : "" });
-const roundOrder: TrackTwoRound[] = ["quarterfinal", "semifinal", "final", "thirdPlace"];
+const roundOrder: TrackTwoRound[] = ["quarterfinal", "semifinal", "thirdPlace", "final"];
+const matchDurationSeconds = 3 * 60;
 const roundNames: Record<TrackTwoRound, string> = { quarterfinal: "Quarterfinals", semifinal: "Semifinals", final: "Final", thirdPlace: "Third-place match" };
 const winsNeeded = (round: TrackTwoRound) => round === "quarterfinal" ? 2 : 3;
 const winsBy = (match: TrackTwoMatch, teamId: string | null) => teamId ? (match.games ?? []).filter((game) => game.winnerId === teamId).length : 0;
+const formatClock = (seconds: number) => `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
 const placeNames = ["1st place", "2nd place", "3rd place", "4th place", "5th place", "6th place", "7th place", "8th place"];
 const newId = () => globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
 
@@ -35,6 +37,7 @@ export default function TrackTwo({ admin = false }: { admin?: boolean }) {
   const [confirmReplace, setConfirmReplace] = useState(false);
   const [boutToast, setBoutToast] = useState<{ id: string; title: string; detail: string } | null>(null);
   const [boutToastVisible, setBoutToastVisible] = useState(false);
+  const [clockNow, setClockNow] = useState(Date.now());
   const savingRef = useRef(false);
   const boutTrackerRef = useRef<Map<string, Set<number>> | null>(null);
   const state = snapshot.state;
@@ -42,8 +45,11 @@ export default function TrackTwo({ admin = false }: { admin?: boolean }) {
   const rankedTeams = useMemo(() => ranked(state.teams), [state.teams]);
   const teamsById = useMemo(() => new Map(state.teams.map((team) => [team.id, team])), [state.teams]);
   const round = getCurrentRound(track);
-  const displayRound = round ?? (track?.matches.some((match) => match.round === "thirdPlace") ? "thirdPlace" : track?.matches.length ? "final" : null);
+  const displayRound = round ?? (track?.matches.some((match) => match.round === "final") ? "final" : track?.matches.length ? "thirdPlace" : null);
   const activeMatch = track?.matches.find((match) => match.id === track.activeMatchId) ?? null;
+  const activeMatchNumber = (activeMatch?.games?.length ?? 0) + 1;
+  const activeGameEnd = track?.activeGameStartedAt ? Date.parse(track.activeGameStartedAt) + matchDurationSeconds * 1000 : null;
+  const activeGameRemaining = activeGameEnd === null ? null : Math.max(0, Math.ceil((activeGameEnd - clockNow) / 1000));
   const currentMatches = displayRound && track ? track.matches.filter((match) => match.round === displayRound) : [];
   const previousRound = displayRound ? roundOrder[roundOrder.indexOf(displayRound) - 1] : null;
   const previousMatches = previousRound && track ? track.matches.filter((match) => match.round === previousRound && match.status === "complete") : [];
@@ -81,6 +87,11 @@ export default function TrackTwo({ admin = false }: { admin?: boolean }) {
   }, [admin, authChecked, authenticated, loadState]);
 
   useEffect(() => {
+    const timer = window.setInterval(() => setClockNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
     if (!ready) return;
     const matches = state.track2?.matches ?? [];
     const previous = boutTrackerRef.current;
@@ -98,10 +109,16 @@ export default function TrackTwo({ admin = false }: { admin?: boolean }) {
       const winner = teamsById.get(latest.game.winnerId)?.name ?? "Team";
       const scoreA = winsBy(latest.match, latest.match.teamAId);
       const scoreB = winsBy(latest.match, latest.match.teamBId);
+      const seriesWon = latest.match.status === "complete" && latest.match.winnerId === latest.game.winnerId;
+      const clinchTitle = latest.match.round === "final"
+        ? `${winner} wins the championship`
+        : latest.match.round === "thirdPlace"
+          ? `${winner} secures third place`
+          : `${winner} wins the ${latest.match.round} series`;
       setBoutToast({
         id: `${latest.match.id}-${latest.game.number}-${latest.game.at ?? Date.now()}`,
-        title: `${winner} wins match ${latest.game.number}`,
-        detail: `${roundNames[latest.match.round]} · Series ${scoreA}–${scoreB}`,
+        title: seriesWon ? clinchTitle : `${winner} wins match ${latest.game.number}`,
+        detail: `Series ${scoreA}–${scoreB}${seriesWon ? " · Series complete" : ` · ${roundNames[latest.match.round]}`}`,
       });
     }
   }, [ready, state.track2, teamsById]);
@@ -192,19 +209,21 @@ export default function TrackTwo({ admin = false }: { admin?: boolean }) {
       { id: newId(), round: "final", slot: 0, teamAId: null, teamBId: null, winnerId: null, status: "pending", games: [] },
       { id: newId(), round: "thirdPlace", slot: 0, teamAId: null, teamBId: null, winnerId: null, status: "pending", games: [] },
     ];
-    if (await persist({ ...state, track2: { matches, activeMatchId: null, createdAt: new Date().toISOString() } })) setDraftTeamIds(null);
+    if (await persist({ ...state, track2: { matches, activeMatchId: null, activeGameStartedAt: null, createdAt: new Date().toISOString() } })) setDraftTeamIds(null);
   }
 
   async function startMatch(matchId: string) {
     if (!track) return;
-    const matches = track.matches.map((match) => match.id === matchId ? { ...match, status: "playing" as const, games: match.games ?? [] } : match);
-    await persist({ ...state, track2: { ...track, matches, activeMatchId: matchId } });
+    const match = track.matches.find((item) => item.id === matchId);
+    if (!match || track.activeGameStartedAt || (track.activeMatchId && track.activeMatchId !== matchId)) return;
+    const matches = track.matches.map((item) => item.id === matchId ? { ...item, status: "playing" as const, games: item.games ?? [] } : item);
+    await persist({ ...state, track2: { ...track, matches, activeMatchId: matchId, activeGameStartedAt: new Date().toISOString() } });
   }
 
   async function recordBout(matchId: string, winnerId: string) {
     if (!track) return;
     const match = track.matches.find((item) => item.id === matchId);
-    if (!match || match.status !== "playing" || ![match.teamAId, match.teamBId].includes(winnerId)) return;
+    if (!match || match.status !== "playing" || track.activeMatchId !== matchId || !track.activeGameStartedAt || ![match.teamAId, match.teamBId].includes(winnerId)) return;
     const games: TrackTwoGameResult[] = [...(match.games ?? []), { number: (match.games?.length ?? 0) + 1, winnerId, at: new Date().toISOString() }];
     const teamAWins = winsBy({ ...match, games }, match.teamAId);
     const teamBWins = winsBy({ ...match, games }, match.teamBId);
@@ -234,8 +253,7 @@ export default function TrackTwo({ admin = false }: { admin?: boolean }) {
       else bronzeMatch.teamBId = loserId;
     }
 
-    const allMatchesInRoundComplete = matches.filter((item) => item.round === match.round).every((item) => item.status === "complete");
-    await persist({ ...state, track2: { ...track, matches, activeMatchId: seriesWinner || allMatchesInRoundComplete ? null : matchId } });
+    await persist({ ...state, track2: { ...track, matches, activeMatchId: seriesWinner ? null : matchId, activeGameStartedAt: null } });
   }
 
   function matchName(match: TrackTwoMatch, side: "A" | "B") {
@@ -256,7 +274,7 @@ export default function TrackTwo({ admin = false }: { admin?: boolean }) {
       <a href="/robolympics" className={styles.brand}><span className={styles.brandIcon}><img src="/Robolympics/aviation-club-logo.png" alt="Aviation Club" /></span><span>ROBOLYMPICS <small>2026 · TRACK II</small></span></a>
       <div className={styles.topRight}>{admin ? <><span className={styles.adminBadge}><Shield size={14} /> ORGANIZER</span><button className={styles.iconButton} onClick={signOut} aria-label="Sign out"><LogOut size={17} /></button></> : <a className={styles.trackTwoButton} href="/robolympics/track2">Track 2 live board</a>}</div>
     </header>
-    <section className={styles.hero}><div><p className={styles.eyebrow}><span className={styles.liveDot} /> ROBOLYMPICS 2026 · TRACK II</p><h1>Championship <em>Rounds</em></h1><p className={styles.heroCopy}>A live knockout bracket featuring the organizer-selected Track 1 teams.</p></div><div className={styles.heroMeta}><Trophy size={18} /><small>QUARTERFINALS · SEMIFINALS · FINAL · THIRD PLACE</small></div></section>
+    <section className={styles.hero}><div><p className={styles.eyebrow}><span className={styles.liveDot} /> ROBOLYMPICS 2026 · TRACK II</p><h1>Championship <em>Rounds</em></h1><p className={styles.heroCopy}>A live knockout bracket featuring the organizer-selected Track 1 teams.</p></div><div className={styles.heroMeta}><Trophy size={18} /><small>QUARTERFINALS · SEMIFINALS · THIRD PLACE · FINAL</small></div></section>
     {!admin && podiumReady && <a className={styles.t2PodiumLink} href="/robolympics/results"><Trophy size={19} /><span><b>Final results and podium</b><small>See the gold, silver, and bronze medal teams</small></span><ArrowLeft size={18} /></a>}
     {error && <div className={styles.errorBanner}>{error}</div>}
     {!ready && <div className={styles.loading}><LoaderCircle size={17} /> Connecting to the live bracket…</div>}
@@ -275,10 +293,11 @@ export default function TrackTwo({ admin = false }: { admin?: boolean }) {
     {track && track.matches.length >= 7 && <>
       <section className={styles.t2NowPlaying}>
         <div className={styles.t2SectionHead}><div><p className={styles.eyebrow}>LIVE MATCH</p><h2>{activeMatch ? roundNames[activeMatch.round] : champion && !round ? "Tournament champion" : round ? roundNames[round] : "Tournament complete"}</h2></div><span className={`${styles.statusPill} ${activeMatch ? styles.isLive : ""}`}><span />{activeMatch ? "IN PROGRESS" : !round && champion ? "COMPLETE" : "UP NEXT"}</span></div>
-        {activeMatch ? <div className={styles.t2FeatureMatch}><div className={styles.t2Contestants}><span>{matchName(activeMatch, "A")}<strong>{winsBy(activeMatch, activeMatch.teamAId)}</strong></span><b>VS</b><span>{matchName(activeMatch, "B")}<strong>{winsBy(activeMatch, activeMatch.teamBId)}</strong></span></div><p>{roundNames[activeMatch.round]} · Match {activeMatch.slot + 1} · First to {winsNeeded(activeMatch.round)} wins · Match {(activeMatch.games ?? []).length + 1}</p>{boutToast && <div key={boutToast.id} className={`${styles.t2LiveAction} ${boutToastVisible ? styles.t2LiveActionVisible : ""}`} role="status" aria-live="polite"><Check size={17} /><span><small>LIVE MATCH RESULT</small><b>{boutToast.title}</b><em>{boutToast.detail}</em></span></div>}</div> : champion && !round ? <div className={styles.t2Champion}><Crown size={24} /><span>{champion.name}</span><small>TRACK 2 CHAMPION</small></div> : <div className={styles.noPlayer}><Radio size={19} />Waiting for the organizer to start the next match.</div>}
+        {activeMatch ? <div className={styles.t2FeatureMatch}><div className={styles.t2Contestants}><span>{matchName(activeMatch, "A")}<strong>{winsBy(activeMatch, activeMatch.teamAId)}</strong></span><b>VS</b><span>{matchName(activeMatch, "B")}<strong>{winsBy(activeMatch, activeMatch.teamBId)}</strong></span></div><p>{roundNames[activeMatch.round]} · Series {activeMatch.slot + 1} · First to {winsNeeded(activeMatch.round)} match wins</p><div className={`${styles.t2MatchClock} ${activeGameRemaining === 0 ? styles.t2MatchClockExpired : ""}`}><span>{activeGameRemaining === null ? `MATCH ${activeMatchNumber} · READY FOR ORGANIZER` : activeGameRemaining === 0 ? `MATCH ${activeMatchNumber} · TIME EXPIRED` : `MATCH ${activeMatchNumber} · TIME LEFT`}</span><strong>{formatClock(activeGameRemaining ?? matchDurationSeconds)}</strong></div>{activeGameRemaining === 0 ? <small className={styles.t2ClockNote}>Time is up. The organizer is choosing this match’s winner.</small> : activeGameRemaining === null ? <small className={styles.t2ClockNote}>The organizer will start the next 3-minute match when ready.</small> : null}</div> : champion && !round ? <div className={styles.t2Champion}><Crown size={24} /><span>{champion.name}</span><small>TRACK 2 CHAMPION</small></div> : <div className={styles.noPlayer}><Radio size={19} />Waiting for the organizer to start the next match.</div>}
+        {boutToast && <div key={boutToast.id} className={`${styles.t2LiveAction} ${boutToastVisible ? styles.t2LiveActionVisible : ""}`} role="status" aria-live="polite"><Check size={17} /><span><small>{boutToast.detail.includes("Series complete") ? "SERIES RESULT" : "LIVE MATCH RESULT"}</small><b>{boutToast.title}</b><em>{boutToast.detail}</em></span></div>}
       </section>
-      {displayRound && <section className={styles.t2RoundSection}><div className={styles.t2SectionHead}><div><p className={styles.eyebrow}>{displayRound === "thirdPlace" ? "PLACEMENT MATCH · AFTER THE FINAL" : `ROUND ${roundOrder.indexOf(displayRound) + 1} OF 3`}</p><h2>{roundNames[displayRound]}</h2></div><span className={styles.t2RoundCount}>{currentMatches.filter((match) => match.status === "complete").length} / {currentMatches.length} COMPLETE</span></div><div className={styles.t2MatchGrid}>{currentMatches.map((match) => <MatchCard key={match.id} match={match} nameA={matchName(match, "A")} nameB={matchName(match, "B")} admin={admin} saving={saving} canStart={!track.activeMatchId && !saving} isActive={match.id === track.activeMatchId} onStart={() => void startMatch(match.id)} onBout={(winnerId) => void recordBout(match.id, winnerId)} />)}</div></section>}
-      {previousRound && previousMatches.length > 0 && <section className={styles.t2RoundSection}><div className={styles.t2SectionHead}><div><p className={styles.eyebrow}>COMPLETED</p><h2>Previous round · {roundNames[previousRound]}</h2></div></div><div className={styles.t2MatchGrid}>{previousMatches.map((match) => <MatchCard key={match.id} match={match} nameA={matchName(match, "A")} nameB={matchName(match, "B")} admin={false} saving={false} canStart={false} isActive={false} onStart={() => undefined} onBout={() => undefined} />)}</div></section>}
+      {displayRound && <section className={styles.t2RoundSection}><div className={styles.t2SectionHead}><div><p className={styles.eyebrow}>{displayRound === "thirdPlace" ? "PLACEMENT MATCH · BEFORE THE FINAL" : displayRound === "final" ? "CHAMPIONSHIP MATCH" : `ROUND ${roundOrder.indexOf(displayRound) + 1} OF 3`}</p><h2>{roundNames[displayRound]}</h2></div><span className={styles.t2RoundCount}>{currentMatches.filter((match) => match.status === "complete").length} / {currentMatches.length} COMPLETE</span></div><div className={styles.t2MatchGrid}>{currentMatches.map((match) => <MatchCard key={match.id} match={match} nameA={matchName(match, "A")} nameB={matchName(match, "B")} admin={admin} saving={saving} canStart={!track.activeMatchId && !saving} isActive={match.id === track.activeMatchId} currentMatchRunning={match.id === track.activeMatchId && Boolean(track.activeGameStartedAt)} currentMatchExpired={match.id === track.activeMatchId && activeGameRemaining === 0} onStart={() => void startMatch(match.id)} onBout={(winnerId) => void recordBout(match.id, winnerId)} />)}</div></section>}
+      {previousRound && previousMatches.length > 0 && <section className={styles.t2RoundSection}><div className={styles.t2SectionHead}><div><p className={styles.eyebrow}>COMPLETED</p><h2>Previous round · {roundNames[previousRound]}</h2></div></div><div className={styles.t2MatchGrid}>{previousMatches.map((match) => <MatchCard key={match.id} match={match} nameA={matchName(match, "A")} nameB={matchName(match, "B")} admin={false} saving={false} canStart={false} isActive={false} currentMatchRunning={false} currentMatchExpired={false} onStart={() => undefined} onBout={() => undefined} />)}</div></section>}
     </>}
     {admin && <section className={styles.t2AdminNav}><div><p className={styles.eyebrow}>ORGANIZER</p><h2>Track 2 control</h2><p>Start each match, then tap the winning team to advance it to the next round.</p></div>{track?.matches.length && !confirmReplace ? <button className={styles.dangerButton} onClick={() => setConfirmReplace(true)} disabled={saving}>Replace random packet</button> : null}<a className={styles.secondaryButton} href="/robolympics/admin"><ArrowLeft size={16} /> Back to Track 1</a>
       {confirmReplace && <div className={styles.t2ReplaceConfirm} role="alertdialog" aria-label="Confirm replacement of Track 2 packet"><span>This clears all Track 2 matches and results before selecting a new set of teams.</span><button className={styles.undoButton} onClick={() => setConfirmReplace(false)} disabled={saving}>Cancel</button><button className={styles.dangerButton} onClick={() => void replacePacket()} disabled={saving}>{saving ? "Clearing…" : "Clear and choose teams"}</button></div>}
@@ -287,8 +306,8 @@ export default function TrackTwo({ admin = false }: { admin?: boolean }) {
   </main>;
 }
 
-function MatchCard({ match, nameA, nameB, admin, saving, canStart, isActive, onStart, onBout }: {
-  match: TrackTwoMatch; nameA: string; nameB: string; admin: boolean; saving: boolean; canStart: boolean; isActive: boolean;
+function MatchCard({ match, nameA, nameB, admin, saving, canStart, isActive, currentMatchRunning, currentMatchExpired, onStart, onBout }: {
+  match: TrackTwoMatch; nameA: string; nameB: string; admin: boolean; saving: boolean; canStart: boolean; isActive: boolean; currentMatchRunning: boolean; currentMatchExpired: boolean;
   onStart: () => void; onBout: (teamId: string) => void;
 }) {
   const ready = Boolean(match.teamAId && match.teamBId);
@@ -301,7 +320,8 @@ function MatchCard({ match, nameA, nameB, admin, saving, canStart, isActive, onS
     <p className={styles.t2SeriesRule}>{legacyResult ? "Winner recorded before series tracking" : `Best of ${match.round === "quarterfinal" ? 3 : 5} · First to ${winsNeeded(match.round)}`}</p>
     {games.length > 0 && <div className={styles.t2BoutLog}>{games.map((game) => <span key={game.number}>Match {game.number} · {game.winnerId === match.teamAId ? nameA : nameB}</span>)}</div>}
     {match.status === "complete" && <p className={styles.t2Result}>Winner · {match.winnerId === match.teamAId ? nameA : nameB}</p>}
-    {admin && match.status === "pending" && ready && <button className={styles.secondaryButton} onClick={onStart} disabled={!canStart}><Radio size={15} /> Start match</button>}
-    {admin && isActive && <div className={styles.t2WinnerActions}><small>RECORD MATCH {games.length + 1} WINNER</small><button onClick={() => match.teamAId && onBout(match.teamAId)} disabled={saving}>{nameA} wins this match</button><button onClick={() => match.teamBId && onBout(match.teamBId)} disabled={saving}>{nameB} wins this match</button></div>}
+    {admin && match.status === "pending" && ready && <button className={`${styles.secondaryButton} ${styles.t2StartGame}`} onClick={onStart} disabled={!canStart}><Radio size={16} /> Start match 1 <b>03:00</b></button>}
+    {admin && isActive && !currentMatchRunning && <div className={styles.t2NextGame}><span>{games.length ? `Match ${games.length} recorded · Series ${winsBy(match, match.teamAId)}–${winsBy(match, match.teamBId)}` : "Ready to begin this series"}</span><button className={styles.primaryButton} onClick={onStart} disabled={saving}><Radio size={16} /> Start match {games.length + 1} <b>03:00</b></button></div>}
+    {admin && isActive && currentMatchRunning && <div className={`${styles.t2WinnerActions} ${currentMatchExpired ? styles.t2JudgeDecision : ""}`}><small>{currentMatchExpired ? `JUDGE DECISION · CHOOSE MATCH ${games.length + 1} WINNER` : `RECORD MATCH ${games.length + 1} WINNER`}</small>{currentMatchExpired && <p>Time has ended. Choose a winner to record the result and unlock the next match.</p>}<button onClick={() => match.teamAId && onBout(match.teamAId)} disabled={saving}>{currentMatchExpired ? `Choose ${nameA} as winner` : `${nameA} wins this match`}</button><button onClick={() => match.teamBId && onBout(match.teamBId)} disabled={saving}>{currentMatchExpired ? `Choose ${nameB} as winner` : `${nameB} wins this match`}</button></div>}
   </article>;
 }
